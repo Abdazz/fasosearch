@@ -4,7 +4,6 @@ Traduction neuronale : modèle Argos fr→en exécuté directement avec ctransla
 sentencepiece (sans la librairie Argos, trop lourde). Repli : glossaire du domaine.
 """
 import re
-import unicodedata
 from dataclasses import dataclass
 
 from . import config
@@ -40,11 +39,25 @@ def detect_language(text: str) -> str:
     return "en"
 
 
+_EN_FIXES_LOWER = {wrong.lower(): right for wrong, right in EN_FIXES.items()}
+_FIX_RE = re.compile(
+    r"\b(" + "|".join(re.escape(k) for k in sorted(_EN_FIXES_LOWER, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+
+
 def _apply_fixes(text: str) -> str:
-    out = text
-    for wrong, right in EN_FIXES.items():
-        out = re.sub(rf"\b{re.escape(wrong)}\b", right, out, flags=re.I)
-    return out
+    def _replace(m: re.Match) -> str:
+        right = _EN_FIXES_LOWER[m.group(0).lower()]
+        last_word = right.rsplit(" ", 1)[-1]
+        after = text[m.end():].lstrip()
+        # Ne pas dupliquer un mot déjà correct juste après le match (ex. "search for
+        # information" suivi de "retrieval system" -> ne pas produire "... retrieval retrieval ...").
+        if re.match(rf"{re.escape(last_word)}\b", after, re.I):
+            return m.group(0)
+        return right
+
+    return _FIX_RE.sub(_replace, text)
 
 
 def glossary_translate(text: str) -> str:

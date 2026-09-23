@@ -1,6 +1,12 @@
 import pytest
 
-from backend.app.language import Translator, analyze_language, detect_language, glossary_translate
+from backend.app.language import (
+    Translator,
+    _apply_fixes,
+    analyze_language,
+    detect_language,
+    glossary_translate,
+)
 
 
 @pytest.mark.parametrize("text,expected", [
@@ -30,6 +36,19 @@ def test_glossary_translation_ontology_no_stray_tokens():
     assert "ontology" in out
     tokens = out.split()
     assert "l" not in tokens and "d" not in tokens
+
+
+def test_apply_fixes_does_not_duplicate_words_already_correct():
+    out = _apply_fixes("the search for information retrieval system")
+    assert out.count("retrieval") == 1
+
+
+def test_apply_fixes_still_corrects_known_mistranslation():
+    assert _apply_fixes("automatic learning for health") == "machine learning for health"
+
+
+def test_apply_fixes_is_case_insensitive():
+    assert _apply_fixes("Detection of intrusion") == "intrusion detection"
 
 
 def test_translator_neural_or_fallback_always_returns_english():
