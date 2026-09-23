@@ -105,6 +105,25 @@ def test_stats_corpus_map(engine):
     assert len(m["points"]) == 3 and {"x", "y", "id", "university", "title"} <= set(m["points"][0])
 
 
+def test_check_alignment_raises_on_mismatch():
+    from backend.app.engine import _check_alignment
+
+    _check_alignment(["Document_01", "Document_02"], ["Document_01", "Document_02"])  # no raise
+    with pytest.raises(RuntimeError):
+        _check_alignment(["Document_01", "Document_02"], ["Document_01", "Document_99"])
+
+
+def test_document_invalid_model_falls_back_to_tfidf(engine):
+    d = engine.document("Document_01", query="intrusion", model="xxx")
+    assert d["explanation"]["model"] == "tfidf"
+
+
+def test_snippet_no_trailing_ellipsis_when_last_sentence_included():
+    segs = make_snippet("AAA BBB. CCC DDD. ", {"ccc"})
+    joined = "".join(s["text"] for s in segs)
+    assert joined == "… CCC DDD."
+
+
 @pytest.mark.integration
 def test_real_engine_semantics():
     from scripts.build_index import is_stale

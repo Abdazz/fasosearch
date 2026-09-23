@@ -46,6 +46,7 @@ def highlight(text: str, terms: set[str]) -> list[dict]:
 
 
 def make_snippet(text: str, terms: set[str], max_chars: int = 320) -> list[dict]:
+    text = text.strip()
     sentences = SENTENCE_RE.split(text)
     start = next((i for i, s in enumerate(sentences) if any(h["hit"] for h in highlight(s, terms))), 0)
     snippet = ""
@@ -58,6 +59,15 @@ def make_snippet(text: str, terms: set[str], max_chars: int = 320) -> list[dict]
     prefix = "… " if start > 0 else ""
     suffix = " …" if len(prefix + snippet) < len(text) and not text.endswith(snippet) else ""
     return highlight(prefix + snippet + suffix, terms)
+
+
+def _check_alignment(ids_stored: list[str], ids_docs: list[str]) -> None:
+    """Vérifie que l'index en cache (doc_terms.json) correspond au corpus actuel.
+
+    Lève systématiquement (contrairement à un `assert`, qui disparaît sous `python -O`).
+    """
+    if ids_stored != ids_docs:
+        raise RuntimeError("index obsolète : relancer scripts/build_index.py")
 
 
 # ---------------------------------------------------------------- moteur
@@ -80,7 +90,7 @@ class SearchEngine:
         from scripts.build_index import DOC_TERMS, W2V_FILE
         docs = load_corpus(config.CORPUS_EXCEL)
         stored = json.loads(DOC_TERMS.read_text(encoding="utf-8"))
-        assert stored["ids"] == [d.id for d in docs], "index obsolète : relancer scripts/build_index.py"
+        _check_alignment(stored["ids"], [d.id for d in docs])
         doi = json.loads(config.DOI_JSON.read_text()) if config.DOI_JSON.exists() else {}
         return cls(docs, stored["terms"], KeyedVectors.load(str(W2V_FILE)), doi)
 
@@ -154,6 +164,7 @@ class SearchEngine:
         d = self.by_id.get(doc_id)
         if d is None:
             return None
+        model = model if model in MODELS else "tfidf"
         doc = self.docs[d]
         terms = self.analyze_query(query, lang, model)["terms"] if query.strip() else []
         explanation = None
