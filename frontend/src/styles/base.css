@@ -1,0 +1,28 @@
+@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/jetbrains-mono";
+
+* { box-sizing: border-box; margin: 0; }
+html, body { background: var(--bg); color: var(--ink); font-family: var(--font-body); transition: background .5s, color .5s; }
+body { min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; font-size: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; border-radius: 8px; }
+.wrap { position: relative; z-index: 1; max-width: 1160px; margin: 0 auto; padding: 0 28px 72px; }
+.label { font: 600 11px var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.h-display { font-family: var(--font-display); font-weight: 800; letter-spacing: -.03em; line-height: 1.02; }
+.grad-text { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.panel { background: var(--surface); border: var(--border-w) solid var(--line); border-radius: var(--card-radius); backdrop-filter: var(--blur); }
+[data-theme="faso"] .panel { border-color: var(--ink); }
+.btn { height: 40px; padding: 0 16px; border-radius: 999px; border: var(--border-w) solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+.btn:hover { border-color: var(--line-strong); }
+.btn-primary { border: 0; background: var(--active-bg); color: var(--on-accent); }
+.fade-up { animation: fadeUp .6s var(--ease-out) both; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } }
+@keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.9); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--ring-track); border-top-color: var(--accent); animation: spin .8s linear infinite; margin: 40px auto; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+}
+@media (max-width: 760px) { .wrap { padding: 0 16px 56px; } }

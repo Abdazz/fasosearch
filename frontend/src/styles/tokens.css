@@ -1,0 +1,45 @@
+:root {
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  --font-body: "Inter Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --ease-spring: cubic-bezier(.3, 1.4, .5, 1);
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+}
+[data-theme="nuit"] {
+  --bg: #07091a; --bg-2: #0d1030;
+  --ink: #eef0ff; --ink-2: #a4a9d6; --ink-3: #7076ab;
+  --surface: rgba(255,255,255,.045); --surface-2: rgba(255,255,255,.08); --surface-solid: #11142e;
+  --line: rgba(255,255,255,.10); --line-strong: rgba(255,255,255,.24);
+  --accent: #8b6cff; --accent-2: #22d3ee; --accent-3: #ff6fb1;
+  --grad: linear-gradient(90deg, #8b6cff, #22d3ee);
+  --on-accent: #fff; --active-bg: var(--grad);
+  --shadow: 0 20px 50px -20px rgba(0,0,0,.7);
+  --card-shadow: 0 1px 0 rgba(255,255,255,.06) inset, 0 20px 40px -24px rgba(0,0,0,.8);
+  --card-shadow-hover: 0 1px 0 rgba(255,255,255,.08) inset, 0 28px 50px -24px rgba(0,0,0,.9);
+  --mark: rgba(34,211,238,.18); --mark-ink: #8ff0ff;
+  --chip: rgba(139,108,255,.16); --chip-ink: #cbbcff;
+  --ring-track: rgba(255,255,255,.08);
+  --border-w: 1px; --card-radius: 20px; --search-radius: 22px; --blur: blur(14px);
+  --m-tfidf: #22d3ee; --m-w2v: #ff6fb1; --m-bm25: #f2a900;
+  --danger: #ff6f8e;
+  color-scheme: dark;
+}
+[data-theme="faso"] {
+  --bg: #fbf6ec; --bg-2: #f4ead8;
+  --ink: #231710; --ink-2: #6b5443; --ink-3: #93795f;
+  --surface: #fffdf8; --surface-2: #f6eee0; --surface-solid: #fffdf8;
+  --line: #e6d8c2; --line-strong: #231710;
+  --accent: #c1272d; --accent-2: #009e49; --accent-3: #f2a900;
+  --grad: linear-gradient(90deg, #c1272d, #f2a900 55%, #009e49);
+  --on-accent: #fbf6ec; --active-bg: #231710;
+  --shadow: 6px 6px 0 #231710;
+  --card-shadow: 4px 4px 0 #231710;
+  --card-shadow-hover: 6px 6px 0 #231710;
+  --mark: #fde9b0; --mark-ink: #231710;
+  --chip: #e2f3e8; --chip-ink: #00662f;
+  --ring-track: #efe3cf;
+  --border-w: 1.5px; --card-radius: 18px; --search-radius: 999px; --blur: none;
+  --m-tfidf: #009e49; --m-w2v: #c1272d; --m-bm25: #c98a00;
+  --danger: #c1272d;
+  color-scheme: light;
+}
