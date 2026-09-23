@@ -33,3 +33,9 @@ def test_new_documents_have_university(docs):
 def test_everything_is_english(docs):
     DetectorFactory.seed = 0
     assert all(detect(d.abstract) == "en" for d in docs)
+
+
+def test_no_field_contains_em_or_en_dash(docs):
+    for d in docs:
+        for value in (d.title, d.abstract, d.authors, d.university):
+            assert "—" not in value and "–" not in value

@@ -1,10 +1,23 @@
 """Représentation d'un document et lecture de la base Excel."""
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import openpyxl
 
 COLUMNS = ["ID_document", "Title", "Abstract", "Authors", "Year", "University"]
+
+_SPACED_DASH_RE = re.compile(r" [—–] ")
+_BARE_DASH_RE = re.compile(r"[—–]")
+
+
+def normalize_dashes(s: str) -> str:
+    """Aucun tiret cadratin (—) ni demi-cadratin (–) ne doit apparaître sur la plateforme.
+
+    " — " / " – " (entourés d'espaces) -> " - " ; "—"/"–" restants (ex. 2010–2020) -> "-".
+    """
+    s = _SPACED_DASH_RE.sub(" - ", s)
+    return _BARE_DASH_RE.sub("-", s)
 
 
 @dataclass(frozen=True)
@@ -44,10 +57,10 @@ def load_corpus(path: Path) -> list[Document]:
         get = lambda name: r[col[name]] if name in col and r[col[name]] is not None else ""  # noqa: E731
         docs.append(Document(
             id=str(get("ID_document")).strip(),
-            title=str(get("Title")).strip(),
-            abstract=str(get("Abstract")).strip(),
-            authors=str(get("Authors")).strip(),
+            title=normalize_dashes(str(get("Title")).strip()),
+            abstract=normalize_dashes(str(get("Abstract")).strip()),
+            authors=normalize_dashes(str(get("Authors")).strip()),
             year=_year(get("Year")),
-            university=str(get("University")).strip(),
+            university=normalize_dashes(str(get("University")).strip()),
         ))
     return docs
