@@ -20,6 +20,11 @@ export default function Results({ params }: { params: URLSearchParams }) {
   const [data, setData] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Le modèle qui a réellement produit `data` : tant qu'une nouvelle requête est en vol
+  // (changement de modèle, page, langue…), on continue d'afficher, sous la bonne étiquette,
+  // les derniers résultats reçus, jamais des chiffres d'un modèle sous le nom d'un autre.
+  const shown = data?.model ?? model;
+  const stale = loading && data !== null;
 
   const go = (over: Record<string, string | number | undefined>) =>
     navigate("search", { q, model, lang: lang === "auto" ? undefined : lang, page, pp, ...over });
@@ -42,23 +47,24 @@ export default function Results({ params }: { params: URLSearchParams }) {
       <div className="controls">
         <ModelSwitch value={model} onChange={(m) => go({ model: m, page: 1 })} />
         <button type="button" className="btn compare-btn" onClick={() => navigate("compare", { q, lang: lang === "auto" ? undefined : lang })}>⇆ {t("compare.cta")}</button>
-        {data && !data.message && (
+        {data && (
           <div className="meta">
             <b>{t("results.count", { total: data.total })}</b> · {t("results.time", { ms: data.took_ms })}
             {data.threshold !== null && <> · {t("results.threshold", { t: data.threshold.toFixed(2) })}</>}
           </div>
         )}
       </div>
-      {data && <QueryPipeline query={data.query} model={model} />}
+      {data && <QueryPipeline query={data.query} model={shown} />}
       {loading && !data && <div className="spinner" />}
+      {stale && <div className="spinner spinner-inline" aria-hidden="true" />}
       {error && <EmptyState kind={error === "server_down" ? "server_down" : "error"} msg={error} />}
-      {data?.message === "no_match" && model !== "w2v" && (
+      {data?.message === "no_match" && shown !== "w2v" && (
         <EmptyState kind="no_match" hint={t("empty.no_match.hint")}
           action={{ label: `→ ${t("model.w2v")}`, onClick: () => go({ model: "w2v", page: 1 }) }} />
       )}
-      {data?.message && !(data.message === "no_match" && model !== "w2v") && <EmptyState kind={data.message} />}
+      {data?.message && !(data.message === "no_match" && shown !== "w2v") && <EmptyState kind={data.message} />}
       <div className={`list ${loading ? "is-loading" : ""}`}>
-        {data?.results.map((r, i) => <ResultCard key={`${model}-${r.id}`} result={r} model={model} index={i}
+        {data?.results.map((r, i) => <ResultCard key={`${shown}-${r.id}`} result={r} model={shown} index={i}
           onOpen={(id) => go({ doc: id })} />)}
       </div>
       {data && data.total > 0 && (
@@ -72,6 +78,7 @@ export default function Results({ params }: { params: URLSearchParams }) {
         .meta{margin-left:auto;font-size:13.5px;color:var(--ink-2)}.meta b{color:var(--ink)}
         .list{margin-top:24px;display:flex;flex-direction:column;gap:14px;transition:opacity .2s}
         .list.is-loading{opacity:.45}
+        .spinner-inline{margin:14px auto 0}
       `}</style>
     </section>
   );

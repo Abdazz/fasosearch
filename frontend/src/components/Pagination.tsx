@@ -12,7 +12,7 @@ export default function Pagination({ page, pages, total, perPage, onPage, onPerP
         <button type="button" className="pg" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t("pagination.prev")}>←</button>
         {pageRange(page, pages).map((p, i) => p === "…"
           ? <span key={`e${i}`} className="pg ghost">…</span>
-          : <button key={p} type="button" className={`pg ${p === page ? "on" : ""}`} aria-current={p === page} onClick={() => onPage(p)}>{p}</button>)}
+          : <button key={p} type="button" className={`pg ${p === page ? "on" : ""}`} aria-current={p === page ? "page" : undefined} onClick={() => onPage(p)}>{p}</button>)}
         <button type="button" className="pg" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label={t("pagination.next")}>→</button>
       </div>
       <label className="pp">{t("results.perPage")}

@@ -12,8 +12,12 @@ function shortAuthors(a: string, etAl: string) {
 export default function ResultCard({ result, model, index, onOpen }: { result: SearchResult; model: ModelId; index: number; onOpen: (id: string) => void }) {
   const { t } = usePrefs();
   return (
-    <article className="card" style={{ animationDelay: `${index * 0.06}s` }} tabIndex={0}
-      onClick={() => onOpen(result.id)} onKeyDown={(e) => e.key === "Enter" && onOpen(result.id)}>
+    <article className="card" style={{ animationDelay: `${index * 0.06}s` }} tabIndex={0} role="button"
+      onClick={() => onOpen(result.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onOpen(result.id);
+        else if (e.key === " ") { e.preventDefault(); onOpen(result.id); }
+      }}>
       <div className={`rank ${result.rank === 1 ? "grad-text" : ""}`}>{String(result.rank).padStart(2, "0")}</div>
       <div className="body">
         <h3 className="title">{result.title}</h3>
