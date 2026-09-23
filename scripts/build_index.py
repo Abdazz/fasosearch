@@ -24,7 +24,7 @@ def fingerprint(path: Path) -> str:
     if not path.exists():
         return "absent"
     st = path.stat()
-    return f"{st.st_size}-{int(st.st_mtime)}"
+    return f"{st.st_size}-{st.st_mtime_ns}"
 
 
 def _current() -> str:
@@ -49,7 +49,7 @@ def build() -> None:
     extra_terms = [analyze(line) for line in extra_lines]
     print("Entraînement Word2Vec (skip-gram)...")
     kv = train_word2vec(doc_terms + extra_terms)
-    config.MODELS_DIR.mkdir(exist_ok=True)
+    config.MODELS_DIR.mkdir(parents=True, exist_ok=True)
     DOC_TERMS.write_text(json.dumps({"ids": [d.id for d in docs], "terms": doc_terms}), encoding="utf-8")
     kv.save(str(W2V_FILE))
     FINGERPRINT.write_text(_current())
