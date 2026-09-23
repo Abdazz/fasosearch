@@ -22,6 +22,7 @@ a { color: inherit; }
 @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.9); } }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--ring-track); border-top-color: var(--accent); animation: spin .8s linear infinite; margin: 40px auto; }
+mark { background: var(--mark); color: var(--mark-ink); padding: 1px 4px; border-radius: 5px; font-weight: 600; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
 }
