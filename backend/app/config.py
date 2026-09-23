@@ -16,6 +16,7 @@ LANG_MODEL_DIR = ROOT / "lang_models" / "fr_en"
 W2V_EXTRA = DATA_DIR / "w2v_extra.txt"
 DOI_JSON = DATA_DIR / "doi.json"
 AFFILIATIONS_TODO = DATA_DIR / "affiliations_a_verifier.txt"
+OPENALEX_CACHE_DIR = DATA_DIR / "openalex_cache"
 
 # Word2Vec (skip-gram) — seed + 1 worker => entraînement reproductible
 W2V_PARAMS = dict(vector_size=100, window=5, min_count=2, epochs=30, seed=42, sg=1, workers=1)

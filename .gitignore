@@ -8,3 +8,4 @@ backend/static/
 .superpowers/
 .playwright-mcp/
 data/w2v_extra.txt
+data/openalex_cache/

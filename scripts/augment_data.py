@@ -2,17 +2,28 @@
 
 Critères (spec §2.1) : ≥1 auteur affilié au Burkina Faso, domaine Computer Science,
 anglais (filtre OpenAlex + langdetect), résumé de 60 à 450 mots, pas de doublon.
-Sélection : ~70 articles, au plus 8 par sous-domaine, les plus récents d'abord.
+Filtre « informatique » supplémentaire : titre + résumé doivent contenir au moins 2
+termes distincts du lexique CS_LEXICON (le filtre OpenAlex primary_topic.field.id:17
+laisse passer trop d'articles hors informatique — économie, géologie, santé publique...).
+Sélection : ~70 articles, au plus PER_SUBFIELD par sous-domaine, les plus récents d'abord.
+
+Cache disque : chaque réponse OpenAlex 200 est écrite dans data/openalex_cache/<sha1>.json ;
+_get() lit ce cache avant tout appel réseau (une relance ne recoûte aucun crédit pour les
+pages déjà obtenues). Sur un 429, on ne boucle plus : QuotaExceeded(retry_after_seconds)
+est levée immédiatement (les autres erreurs réseau gardent 3 nouvelles tentatives) ; main()
+l'attrape et s'arrête sans écrire de fichier de sortie partiel.
 
 Produit :
   Devoir/données textuelles - base complète.xlsx   (30 originaux + nouveaux)
   data/w2v_extra.txt        résumés BF non indexés (entraînement Word2Vec uniquement)
   data/doi.json             id -> lien DOI/OpenAlex
   data/affiliations_a_verifier.txt   originaux dont l'affiliation n'a pas été trouvée
+  data/openalex_cache/      cache disque des réponses OpenAlex (ignoré par git)
 
 Usage : python scripts/augment_data.py   (nécessite internet)
 """
 import difflib
+import hashlib
 import json
 import re
 import sys
@@ -34,7 +45,29 @@ BF_FILTER = "authorships.institutions.country_code:BF,language:en,has_abstract:t
 CS_FILTER = BF_FILTER + ",primary_topic.field.id:17"
 SELECT = "id,title,abstract_inverted_index,authorships,publication_year,doi,primary_topic"
 TARGET_NEW = 70
-PER_SUBFIELD = 8
+PER_SUBFIELD = 15  # OpenAlex n'a que quelques sous-domaines informatiques (décision du contrôleur)
+
+CS_LEXICON = (
+    "algorithm", "software", "network", "internet", "computer", "computing", "data", "database",
+    "machine learning", "deep learning", "neural", "learning model", "classification", "classifier",
+    "clustering", "dataset", "artificial intelligence", "ontology", "semantic", "web", "cloud",
+    "security", "cyber", "encryption", "authentication", "protocol", "wireless", "sensor", "iot",
+    "routing", "blockchain", "image processing", "computer vision", "segmentation",
+    "detection model", "recognition", "natural language", "nlp", "text mining",
+    "information system", "information retrieval", "digital", "mobile application",
+    "simulation model", "optimization algorithm", "programming", "server", "architecture",
+    "framework", "platform", "big data", "analytics", "prediction model", "convolutional",
+    "transformer", "embedding", "graph", "e-learning", "e-health", "gis", "remote sensing",
+    "satellite image", "drone", "uav",
+)
+
+
+class QuotaExceeded(Exception):
+    """Levée quand OpenAlex renvoie 429 : quota de crédits épuisé pour la fenêtre en cours."""
+
+    def __init__(self, retry_after_seconds: int):
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__(f"quota OpenAlex épuisé, réessayer dans {retry_after_seconds}s")
 
 
 # ---------------------------------------------------------------- fonctions pures
@@ -89,14 +122,39 @@ def next_ids(start: int, count: int) -> list[str]:
     return ["Document_%02d" % i for i in range(start, start + count)]
 
 
-# ---------------------------------------------------------------- accès OpenAlex
+def is_computer_science(text: str) -> bool:
+    """Vrai si `text` (titre + résumé) contient au moins 2 termes distincts de CS_LEXICON."""
+    low = (text or "").lower()
+    found = {term for term in CS_LEXICON if re.search(r"\b" + re.escape(term) + r"\b", low)}
+    return len(found) >= 2
+
+
+# ---------------------------------------------------------------- accès OpenAlex + cache disque
+def _cache_key(path: str, params: dict) -> str:
+    canonical = json.dumps({"path": path, **params}, sort_keys=True, ensure_ascii=True)
+    return hashlib.sha1(canonical.encode("utf-8")).hexdigest()
+
+
+def _cache_file(path: str, params: dict) -> Path:
+    return config.OPENALEX_CACHE_DIR / f"{_cache_key(path, params)}.json"
+
+
 def _get(path: str, params: dict) -> dict:
     params = {**params, "mailto": MAILTO}
+    config.OPENALEX_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_file = _cache_file(path, params)
+    if cache_file.exists():
+        return json.loads(cache_file.read_text(encoding="utf-8"))
     for attempt in range(4):
         try:
             r = requests.get(f"{API}/{path}", params=params, timeout=40)
+            if r.status_code == 429:
+                retry_after = int(r.headers.get("Retry-After", "60"))
+                raise QuotaExceeded(retry_after)
             r.raise_for_status()
-            return r.json()
+            data = r.json()
+            cache_file.write_text(json.dumps(data), encoding="utf-8")
+            return data
         except requests.RequestException as e:
             print(f"  nouvel essai {attempt + 1} : {e}")
             time.sleep(2 + 2 * attempt)
@@ -128,6 +186,8 @@ def to_candidate(w: dict) -> dict | None:
     n_words = len(abstract.split())
     unis = bf_institutions(w)
     if not title or not unis or not (60 <= n_words <= 450):
+        return None
+    if not is_computer_science(f"{title} {abstract}"):
         return None
     if not (_is_english(title) and _is_english(abstract)):
         return None
@@ -173,6 +233,16 @@ def write_excel(rows: list[list], path: Path) -> None:
 
 
 def main() -> None:
+    """Attrape QuotaExceeded : message clair, aucun fichier de sortie partiel écrit."""
+    try:
+        _run()
+    except QuotaExceeded as e:
+        minutes = -(-e.retry_after_seconds // 60)  # arrondi au supérieur
+        print(f"Quota OpenAlex épuisé : réessayez dans {minutes} minutes.")
+        sys.exit(1)
+
+
+def _run() -> None:
     originals = load_corpus(config.ORIGINAL_EXCEL)
     seen = {norm_title(d.title) for d in originals}
     rows, doi, todo = [], {}, []
