@@ -10,7 +10,8 @@ export default function Nav({ page }: { page: Page }) {
   return (
     <nav className="nav">
       <button className="logo" onClick={() => navigate("home")} aria-label="FasoSearch">
-        <span className="logo-mark">✦</span>Faso<b className="grad-text">Search</b>
+        <span className="logo-mark">✦</span>
+        <span className="logo-word">Faso<b className="grad-text">Search</b></span>
       </button>
       <div className="links">
         {links.map((l) => (
