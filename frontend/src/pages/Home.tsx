@@ -9,14 +9,16 @@ const EXAMPLES = ["détection d'intrusion dans les réseaux", "Internet exchange
   "apprentissage automatique pour la santé", "ontology for agriculture", "sécurité des sites web gouvernementaux"];
 
 function Counter({ value }: { value: number }) {
+  const { lang } = usePrefs();
   const [v, setV] = useState(0);
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setV(value); return; }
     let raf = 0; const t0 = performance.now();
     const step = (t: number) => { const k = Math.min(1, (t - t0) / 1200); setV(Math.round(value * (1 - (1 - k) ** 3))); if (k < 1) raf = requestAnimationFrame(step); };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [value]);
-  return <>{v.toLocaleString()}</>;
+  return <>{v.toLocaleString(lang === "fr" ? "fr-FR" : "en-US")}</>;
 }
 
 export default function Home() {
@@ -28,7 +30,7 @@ export default function Home() {
 
   return (
     <section className="home">
-      <div className="label fade-up">Système de Recherche d'Information · Master IA</div>
+      <div className="label fade-up">{t("home.eyebrow")}</div>
       <h1 className="h-display fade-up" style={{ animationDelay: ".05s" }}>
         {t("home.tagline").split(",")[0]}<span className="grad-text">{t("home.tagline").includes(",") ? "," + t("home.tagline").split(",").slice(1).join(",") : ""}</span>
       </h1>
@@ -49,7 +51,7 @@ export default function Home() {
             </div>
           ))}
           <div className="stat panel fade-up" style={{ animationDelay: ".46s" }}>
-            <b className="h-display">{stats.year_min}–{String(stats.year_max).slice(2)}</b><span>{t("home.stat.years")}</span>
+            <b className="h-display">{stats.year_min ?? "?"}-{stats.year_max ?? "?"}</b><span>{t("home.stat.years")}</span>
           </div>
         </div>
       )}

@@ -21,7 +21,7 @@ export default function SearchBar({ initial = "", lang, detected, onSubmit, onLa
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  let badge = "AUTO";
+  let badge = t("search.auto");
   if (lang !== "auto") badge = t("search.forced", { lang: lang.toUpperCase() });
   else if (detected) badge = t("search.detected", { lang: detected.language.toUpperCase() });
   const showArrow = (lang === "fr") || (lang === "auto" && detected?.language === "fr");
