@@ -1,2 +1,10 @@
+__pycache__/
+.pytest_cache/
+models/
+lang_models/
+nltk_data/
+frontend/node_modules/
+backend/static/
 .superpowers/
 .playwright-mcp/
+data/w2v_extra.txt
