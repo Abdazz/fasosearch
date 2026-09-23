@@ -34,3 +34,15 @@ def test_other_endpoints(client):
     assert client.get("/api/w2v/neighbors", params={"word": "attacks"}).json()["term"] == "attack"
     assert len(client.get("/api/corpus").json()["documents"]) == 3
     assert len(client.get("/api/map").json()["points"]) == 3
+
+
+def test_validation_error_missing_param(client):
+    r = client.get("/api/w2v/neighbors")
+    assert r.status_code == 422
+    assert isinstance(r.json()["detail"], str) and "word" in r.json()["detail"]
+
+
+def test_validation_error_invalid_type(client):
+    r = client.post("/api/search", json={"query": "x", "per_page": "abc"})
+    assert r.status_code == 422
+    assert isinstance(r.json()["detail"], str)

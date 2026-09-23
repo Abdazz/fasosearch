@@ -3,6 +3,7 @@
 1. vérifie les ressources hors ligne ; 2. (re)construit l'index si nécessaire ;
 3. démarre le serveur ; 4. ouvre le navigateur.
 """
+import socket
 import sys
 import threading
 import webbrowser
@@ -31,6 +32,14 @@ def main() -> None:
     app = create_app(SearchEngine.load())
     url = f"http://{HOST}:{PORT}"
     print(f"FasoSearch prêt : {url}")
+
+    # Check if port is already in use
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex((HOST, PORT))
+    sock.close()
+    if result == 0:
+        sys.exit(f"Le port {PORT} est déjà utilisé : FasoSearch tourne peut-être déjà ({url})")
+
     if "--no-browser" not in sys.argv:
         threading.Timer(1.5, lambda: webbrowser.open(url)).start()
     uvicorn.run(app, host=HOST, port=PORT, log_level="warning")

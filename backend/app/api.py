@@ -1,5 +1,6 @@
 """Routes HTTP de FasoSearch."""
 from fastapi import FastAPI, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -34,6 +35,14 @@ def _require_query(q: str) -> None:
 
 def create_app(engine: SearchEngine) -> FastAPI:
     app = FastAPI(title="FasoSearch", version="1.0")
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request, exc):
+        field_names = ", ".join(str(e["loc"][-1]) for e in exc.errors())
+        return JSONResponse(
+            status_code=422,
+            content={"detail": f"Paramètres invalides : {field_names}"}
+        )
 
     @app.get("/api/stats")
     def stats():
