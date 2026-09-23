@@ -40,3 +40,11 @@ def test_to_dict_shape():
     d = preprocess("Networks").to_dict()
     assert d == {"mode": "lemma", "terms": ["network"],
                  "tokens": [{"raw": "Networks", "normalized": "networks", "term": "network", "removed_by": None}]}
+
+
+def test_contractions_removed_as_stopwords_straight_apostrophe():
+    assert preprocess("don't stop networks").terms == ["stop", "network"]
+
+
+def test_contractions_removed_as_stopwords_typographic_apostrophe():
+    assert preprocess("don't stop networks").terms == ["stop", "network"]

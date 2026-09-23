@@ -60,8 +60,10 @@ def _lemma(word: str, pos: str) -> str:
 def preprocess(text: str, mode: str = "lemma") -> Preprocessed:
     out = Preprocessed(mode=mode)
     kept: list[TokenTrace] = []
+    # Normalize typographic apostrophes (U+2019) to straight apostrophe (U+0027)
+    text = (text or "").replace("'", "'")
     # 1. tokenisation
-    for raw in TOKEN_RE.findall(text or ""):
+    for raw in TOKEN_RE.findall(text):
         t = TokenTrace(raw=raw)
         out.tokens.append(t)
         # 2. normalisation : minuscules, retrait ponctuation / nombres isolés
@@ -74,7 +76,8 @@ def preprocess(text: str, mode: str = "lemma") -> Preprocessed:
             t.removed_by = "number"
             continue
         # 3. stopwords (et mots d'une seule lettre)
-        if low in STOPWORDS or len(low) < 2:
+        # Check both with apostrophe and without (for contractions like "don't")
+        if raw.lower() in STOPWORDS or low in STOPWORDS or len(low) < 2:
             t.removed_by = "stopword"
             continue
         kept.append(t)
