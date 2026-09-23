@@ -1,0 +1,31 @@
+ID	Titre	Auteurs  (affiliation à compléter à la main dans la colonne University)
+Document_01	Analysis of Plaintext Features in DoH Traffic for DGA Domains Detection	Tapsoba Abdou Romaric; Ouédraogo Tounwendyam Frédéric; Zongo Wend-Benedo Simeon
+Document_02	Lightweight Authentication System for Software-Defined Wireless Sensor Networks	Amado Illy; Youssou Faye; Tiguiane Yélémou
+Document_03	A Relevant Feature Identification Approach to Detect APTs in HTTPS Traffic	Tapsoba Abdou Romaric; Ouédraogo Tounwendyam Frédéric
+Document_04	Integer Linear Programming Model for Reconfigurable Routing Problem in a Network-on-Chip with Guaranteed Traffic	Zerbo Boureima; Ouédraogo Tounwendyam Frédéric; Yélémou Tiguiane; Séré Abdoulaye
+Document_05	Evaluation of supervised learning algorithms in binary and multi-class network anomalies detection	Tapsoba Abdou Romaric; Ouédraogo Tounwendyam Frédéric
+Document_06	Vulnerabilities of Government Websites in a Developing Country – the Case of Burkina Faso	Tegawendé F. Bissyandé; Jonathan Ouoba; Daouda Ahmat; Frédéric Ouédraogo; Cedric Béré; Moustapha Bikienga; Abdoulaye Sere; Mesmin Dandjinou; Oumarou Sié
+Document_07	Focus on the Internet of Burkina: Measurement and Characterization	Frédéric T. Ouédraogo; Boureima Zerbo
+Document_08	G-Cloud: Opportunities and Security Challenges for Burkina Faso	Didier Bassolé; Tounwendyam Frédéric Ouédraogo; Oumarou Sié
+Document_09	Ego-Centered View to Overcome the Internet Measurement Challenges in West Africa	Tounwendyam Frédéric Ouédraogo; Tegawendé F. Bissyandé; Abdoulaye Séré; Mesmin Djandjnou
+Document_10	Impact of Small-World Effect on the IP-level Routing Dynamics	Tounwendyam Frédéric Ouédraogo; Tegawendé Bissyandé; Daouda Sawadogo; Didier Bassolé; Abdoulaye Séré; Oumarou Sié
+Document_11	An Improvement of the Standard Hough Transform Method Based on Geometric Shapes	Abdoulaye Séré; Tounwendyam Frédéric Ouédraogo; Boureima Zerbo
+Document_12	The Status of IXPs in Africa: Failure or Success?	Yamba Dabone; Tounwendyam Frédéric Ouédraogo; Oumarou Sié
+Document_13	Measures to Enhance the Characterization of Internet Exchange Points	Yamba Dabone; Tounwendyam Frédéric Ouédraogo; Oumarou Sié
+Document_14	Improving the Linkage of Internet Exchange Points Through Connected ISPs Ases	Yamba Dabone; Tounwendyam Frédéric Ouédraogo; Pengwendé Justin Kouraogo
+Document_15	Towards a Smart Guidance System in CAMPUSFASO: Simulation Results	Ozias Bombiri; Tounwendyam F. Ouédraogo; Paonouor Some; Pasteur Poda
+Document_16	Building an Intelligent Tutoring System for Learning Polysemous Words in Mooré	Pengwendé Zongo; Tounwendyam Frédéric Ouédraogo
+Document_17	Flaws in the Field of Digital Security in the Workplace: Case of Companies in Burkina Faso	Yanogo Kiswendsida Jean Hermann; Tounwendyam Frédéric Ouédraogo
+Document_18	Toward a Data Fusion Based Framework to Predict Schistosomiasis Infection	Teegwende Zougmoré; Sadouanouan Malo; Bamba Gueye; Stanislas Ouaro
+Document_19	Towards an Ontology-Based Cotton Phytosanitary Surveillance System: A Case Study in Côte d’Ivoire	Kouaho N’Guessan Narcisse Téhia; Sadouanouan Malo; Appoh Kouamé; Malanno Kouakou; Kouadio Kra Norbert Bini; Ochou Germain Ochou
+Document_20	DL4Cashew: Deep Learning Model for Cashew Trees Counting	Sadouanouan Malo; Thierry Roger Bayala; Zakaria Kinda
+Document_21	A Geolocation Approach for Tweets Not Explicitly Georeferenced Based on Machine Learning	Julie Thiombiano; Sadouanouan Malo; Yaya Traoré
+Document_22	French COVID-19 Tweets Classification Using FlauBERT Layers	Sadouanouan Malo; Thierry Roger Bayala; Zakaria Kinda
+Document_23	Interoperability Approach for Hospital Information Systems Based on the Composition of Web Services	Lydie Simone Kone/Tapsoba; Yaya Traoré; Sadouanouan Malo
+Document_24	Architecture of a Platform on Sharing Endogenous Knowledge to Adapt to Climate Change	Halguièta Trawina; Ibrahima Diop; Sadouanouan Malo; Yaya Traoré
+Document_25	Construction of a Core Ontology of Endogenous Knowledge on Agricultural Techniques: OntoEndo	Halguièta Trawina; Sadouanouan Malo; Ibrahima Diop; Yaya Traoré
+Document_26	Toward an Intelligent System for Taurine Cattle Recognition	Fulbert Bembamba; Tounwendyam Frédéric Ouédraogo; Albert Soudré; Amadou Traoré
+Document_27	An UAV-Based Approach with Thermal Camera to Buried Improvised Explosive Detection	Issaka Daouega; Sadouanouan Malo; Tounwendyam Frédéric Ouédraogo
+Document_28	On the Machine Learning Models to Predict Town-Scale Energy Consumption in Burkina Faso	Baowendsomme Armel Yameogo; Tounwendyam Frédéric Ouédraogo; Constantin Zongo
+Document_29	Indexing and Searching Visual Content in a Data Lake Context	Safiatou Sore; Tounwendyam Frédéric Ouédraogo; Yaya Traoré; Moustapha Bikienga
+Document_30	Fog-Enabled Modular Deep Learning Platform for Textual Data Mining in Healthcare for Pathology Detection in Burkina Faso	Constantin Drabo; Sadouanouan Malo
