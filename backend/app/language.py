@@ -3,6 +3,7 @@
 Traduction neuronale : modèle Argos fr→en exécuté directement avec ctranslate2 +
 sentencepiece (sans la librairie Argos, trop lourde). Repli : glossaire du domaine.
 """
+import functools
 import re
 from dataclasses import dataclass
 
@@ -83,12 +84,15 @@ class Translator:
             import sentencepiece as spm
             d = config.LANG_MODEL_DIR
             self._sp = spm.SentencePieceProcessor(model_file=str(d / "sentencepiece.model"))
-            self._tr = ctranslate2.Translator(str(d / "model"), device="cpu")
+            self._tr = ctranslate2.Translator(str(d / "model"), device="cpu", intra_threads=4)
             self.available = True
         except Exception:
             self.available = False
+        # Cache par instance (et non partagé par lru_cache posé sur la classe) : évite de
+        # garder toutes les instances en vie via la clé de cache et rend cache_info() lisible.
+        self._translate_cached = functools.lru_cache(maxsize=1024)(self._translate_uncached)
 
-    def translate(self, text: str) -> tuple[str, str]:
+    def _translate_uncached(self, text: str) -> tuple[str, str]:
         if self.available:
             try:
                 pieces = self._sp.encode(text, out_type=str)
@@ -100,6 +104,19 @@ class Translator:
             except Exception:
                 pass
         return glossary_translate(text), "glossary"
+
+    def translate(self, text: str) -> tuple[str, str]:
+        return self._translate_cached(text)
+
+    def warm_up(self) -> None:
+        """Traduit une courte phrase une fois pour préchauffer le modèle (latence de démo).
+
+        Ne lève jamais, même si le modèle neuronal est absent.
+        """
+        try:
+            self.translate("bonjour")
+        except Exception:
+            pass
 
 
 @dataclass

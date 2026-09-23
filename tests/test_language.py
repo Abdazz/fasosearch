@@ -75,3 +75,25 @@ def test_analyze_language_auto_and_forced():
     assert en.language == "en" and en.translated is None and en.english == "intrusion detection"
     forced = analyze_language("data", "fr", tr)
     assert forced.language == "fr" and forced.forced
+
+
+def test_translate_is_cached_and_returns_same_result_twice():
+    tr = Translator()
+    first = tr.translate("détection d'intrusion")
+    second = tr.translate("détection d'intrusion")
+    assert first == second
+
+
+def test_translate_cache_actually_hits_on_repeat():
+    tr = Translator()
+    tr.translate("l'apprentissage automatique")
+    info_before = tr._translate_cached.cache_info()
+    tr.translate("l'apprentissage automatique")
+    info_after = tr._translate_cached.cache_info()
+    assert info_after.hits == info_before.hits + 1
+
+
+def test_warm_up_never_raises():
+    tr = Translator()
+    tr.warm_up()  # ne doit jamais lever, même si le modèle neuronal est absent
+    tr.warm_up()

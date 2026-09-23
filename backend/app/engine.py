@@ -83,6 +83,7 @@ class SearchEngine:
         self.bm25 = BM25Model(self.index)
         self.w2v = Word2VecModel(kv, doc_terms, self.tfidf.idf_map())
         self.translator = translator or Translator()
+        self.translator.warm_up()
         self._map = self._compute_map()
 
     @classmethod
