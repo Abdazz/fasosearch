@@ -132,8 +132,28 @@ def test_real_engine_semantics():
     real = SearchEngine.load()
     assert real.search("intrusion detection")["results"]
     assert real.search("détection d'intrusion")["query"]["language"] == "fr"
-    sim_close = real.w2v.similarity("intrusion", "attack")
-    far_word = next((w for w in ("cattle", "agriculture", "crop") if real.w2v.contains(w)), None)
-    if sim_close is None or far_word is None:
-        pytest.skip("mots de test absents du vocabulaire")
-    assert sim_close > real.w2v.similarity("intrusion", far_word)
+
+    # Comparaison de groupes plutôt qu'une seule paire de mots (plus robuste : dans ce corpus
+    # burkinabè, "intrusion" désigne aussi l'intrusion saline en hydrologie, ce qui rendait la
+    # comparaison ponctuelle intrusion/cattle fragile).
+    SEC_WORDS = ["attack", "malware", "intrusion", "security", "encryption", "authentication",
+                 "threat", "vulnerability"]
+    AGR_WORDS = ["cattle", "crop", "maize", "soil", "farmer", "livestock", "yield", "agriculture"]
+    sec = [w for w in SEC_WORDS if real.w2v.contains(w)]
+    agr = [w for w in AGR_WORDS if real.w2v.contains(w)]
+    if len(sec) < 4 or len(agr) < 4:
+        pytest.skip("mots de test insuffisamment présents dans le vocabulaire")
+
+    def mean_pairwise(words):
+        pairs = [real.w2v.similarity(a, b) for i, a in enumerate(words) for b in words[i + 1:]]
+        return sum(pairs) / len(pairs)
+
+    def mean_cross(words_a, words_b):
+        pairs = [real.w2v.similarity(a, b) for a in words_a for b in words_b]
+        return sum(pairs) / len(pairs)
+
+    sec_internal = mean_pairwise(sec)
+    agr_internal = mean_pairwise(agr)
+    cross = mean_cross(sec, agr)
+    assert sec_internal > cross
+    assert agr_internal > cross

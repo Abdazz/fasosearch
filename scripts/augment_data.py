@@ -201,6 +201,32 @@ def _get(path: str, params: dict) -> dict:
     return {}
 
 
+_last_search_call = [0.0]
+SEARCH_MIN_INTERVAL = 2.0  # espacement minimal (s) entre deux appels réseau réels à `search=`
+SEARCH_RETRY_MAX_WAIT = 120  # au-delà, on abandonne proprement plutôt que d'attendre
+
+
+def _search_paced(params: dict) -> dict:
+    """Appelle `_get('works', params)` (endpoint `search`, coûteux) en respectant un
+    espacement minimal entre appels réseau réels (pas sur un hit de cache), et en retentant
+    une seule fois un 429 dont le Retry-After est <= SEARCH_RETRY_MAX_WAIT s (sinon la
+    QuotaExceeded se propage : le run reste correct/propre, pas d'affiliation inventée)."""
+    if not _cache_file("works", {**params, "mailto": MAILTO}).exists():
+        elapsed = time.time() - _last_search_call[0]
+        if elapsed < SEARCH_MIN_INTERVAL:
+            time.sleep(SEARCH_MIN_INTERVAL - elapsed)
+    try:
+        data = _get("works", params)
+    except QuotaExceeded as e:
+        if e.retry_after_seconds > SEARCH_RETRY_MAX_WAIT:
+            raise
+        time.sleep(e.retry_after_seconds)
+        data = _get("works", params)  # une seule retentative ; propage si ça échoue encore
+    finally:
+        _last_search_call[0] = time.time()
+    return data
+
+
 def fetch_all(filter_str: str, limit: int = 5000) -> list[dict]:
     out, cursor = [], "*"
     while cursor and len(out) < limit:
@@ -262,13 +288,53 @@ def is_excluded(work: dict, title: str, exclusions: set[str]) -> bool:
     return norm_title(title) in exclusions or wid in exclusions or wid.rsplit("/", 1)[-1] in exclusions
 
 
-def find_original_affiliation(title: str) -> tuple[str, str | None]:
-    """Retrouve un article d'origine par son titre ; renvoie (universités BF, url)."""
-    data = _get("works", {"search": title, "per-page": 5, "select": SELECT})
+def _significant_words(title: str, n: int = 8) -> str:
+    """Les n premiers mots significatifs (>2 lettres) d'un titre, pour title.search:."""
+    words = [w for w in re.findall(r"[A-Za-z0-9]+", title or "") if len(w) > 2]
+    return " ".join(words[:n])
+
+
+def _best_match(data: dict, title: str) -> tuple[str, str | None] | None:
     for w in data.get("results", []):
         ratio = difflib.SequenceMatcher(None, norm_title(title), norm_title(w.get("title") or "")).ratio()
         if ratio >= 0.9:
             return "; ".join(bf_institutions(w)), (w.get("doi") or w.get("id"))
+    return None
+
+
+def find_original_affiliation(title: str, authors: str = "") -> tuple[str, str | None]:
+    """Retrouve un article d'origine par son titre ; renvoie (universités BF, url).
+
+    Stratégie 1 (endpoint `search`, 10 crédits) : voir `_search_paced` pour l'espacement et
+    la retentative sur 429 court. Stratégie 2 (si la 1 ne trouve rien), beaucoup moins chère :
+    `filter=title.search:<8 premiers mots significatifs>` (1 crédit), complétée par le nom du
+    premier auteur si la première tentative de la stratégie 2 ne trouve rien non plus. Dans
+    tous les cas, un résultat n'est accepté que si la similarité de titre normalisé est >= 0.9
+    (jamais d'affiliation inventée) ; sinon on renvoie ("", None).
+    """
+    data = _search_paced({"search": title, "per-page": 5, "select": SELECT})
+    match = _best_match(data, title)
+    if match:
+        return match
+
+    words = _significant_words(title)
+    data2 = _get("works", {"filter": f"title.search:{words}", "per-page": 5, "select": SELECT})
+    match = _best_match(data2, title)
+    if match:
+        return match
+
+    first_author = ""
+    if authors:
+        first = authors.split(";")[0].strip()
+        if first:
+            first_author = first.split()[-1]
+    if first_author:
+        data3 = _get("works", {"filter": f"title.search:{words},raw_author_name.search:{first_author}",
+                                "per-page": 5, "select": SELECT})
+        match = _best_match(data3, title)
+        if match:
+            return match
+
     return "", None
 
 
@@ -309,22 +375,22 @@ def _run() -> None:
 
     print("1/3 Affiliations des 30 articles d'origine...")
     # Best-effort : le endpoint `search` (10 crédits/appel) est distinct des endpoints
-    # `filter` des phases 2/3 et peut être limité indépendamment (fenêtre courte). Un
-    # QuotaExceeded ici ne doit pas annuler tout le run : les affiliations restantes sont
-    # simplement laissées à vérifier manuellement (data/affiliations_a_verifier.txt), comme
+    # `filter` des phases 2/3 et peut être limité indépendamment (fenêtre courte,
+    # cf. _search_paced : espacement >=2s + une retentative sur un 429 <=120s). Si malgré
+    # cela une QuotaExceeded remonte (429 >120s, ou la retentative échoue aussi), on arrête
+    # proprement les recherches d'affiliations restantes plutôt que de faire planter tout le
+    # run : elles restent à vérifier manuellement (data/affiliations_a_verifier.txt), comme
     # c'est déjà le cas quand un titre n'est pas retrouvé.
     quota_hit_in_phase1 = False
     for d in originals:
         uni, url = "", None
         if not quota_hit_in_phase1:
             try:
-                uni, url = find_original_affiliation(d.title)
-                time.sleep(0.15)
+                uni, url = find_original_affiliation(d.title, d.authors)
             except QuotaExceeded as e:
                 quota_hit_in_phase1 = True
                 print(f"  quota OpenAlex atteint (endpoint search) : affiliations restantes "
-                      f"laissées à vérifier manuellement (pause {e.retry_after_seconds}s avant la suite)")
-                time.sleep(min(e.retry_after_seconds, 90))
+                      f"laissées à vérifier manuellement (retry_after={e.retry_after_seconds}s)")
         if not uni:
             todo.append(f"{d.id}\t{d.title}\t{d.authors}")
         if url:

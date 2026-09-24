@@ -4,10 +4,11 @@ import pytest
 import requests
 
 from backend.app import config
-from scripts.augment_data import (CS_LEXICON, PER_SUBFIELD, STRONG_LEXICON, WEAK_LEXICON,
-                                  QuotaExceeded, bf_institutions, clean, is_computer_science,
-                                  is_excluded, load_exclusions, next_ids, norm_title,
-                                  rebuild_abstract, select_diverse, _get)
+from scripts.augment_data import (CS_LEXICON, PER_SUBFIELD, SEARCH_RETRY_MAX_WAIT,
+                                  STRONG_LEXICON, WEAK_LEXICON, QuotaExceeded, bf_institutions,
+                                  clean, is_computer_science, is_excluded, load_exclusions,
+                                  next_ids, norm_title, rebuild_abstract, select_diverse,
+                                  _get, _search_paced, _significant_words)
 
 
 def test_rebuild_abstract_orders_words():
@@ -187,3 +188,54 @@ def test_get_retries_three_times_on_other_network_errors(cache_dir, monkeypatch)
     result = _get("works", {"filter": "w"})
     assert result == {}
     assert len(calls) == 4  # 1 essai + 3 nouvelles tentatives
+
+
+# ---------------------------------------------------------------- affiliations d'origine
+def test_significant_words_keeps_first_n_words_over_two_letters():
+    title = "A Relevant Feature Identification Approach to Detect APTs in HTTPS Traffic Today"
+    assert _significant_words(title, 8) == "Relevant Feature Identification Approach Detect APTs HTTPS Traffic"
+
+
+def test_significant_words_handles_empty_title():
+    assert _significant_words("") == ""
+    assert _significant_words(None) == ""
+
+
+def test_search_paced_sleeps_at_least_min_interval_between_uncached_calls(cache_dir, monkeypatch):
+    monkeypatch.setattr(requests, "get", lambda *a, **k: _FakeResponse(json_data={"results": []}))
+    sleeps = []
+    monkeypatch.setattr("time.sleep", lambda s: sleeps.append(s))
+    import scripts.augment_data as aug
+    aug._last_search_call[0] = 0.0
+    monkeypatch.setattr("time.time", lambda: 1000.0)
+    _search_paced({"search": "first title", "per-page": 5})
+    aug._last_search_call[0] = 1000.5  # moins de 2s depuis le dernier appel réseau
+    monkeypatch.setattr("time.time", lambda: 1000.5)
+    _search_paced({"search": "second title", "per-page": 5})
+    assert any(s >= 1.4 for s in sleeps)  # a bien attendu pour respecter les 2s
+
+
+def test_search_paced_retries_once_on_short_429_then_succeeds(cache_dir, monkeypatch):
+    calls = []
+
+    def fake_get(*a, **k):
+        calls.append(1)
+        if len(calls) == 1:
+            return _FakeResponse(status_code=429, headers={"Retry-After": "5"})
+        return _FakeResponse(json_data={"results": [{"title": "ok"}]})
+
+    monkeypatch.setattr(requests, "get", fake_get)
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    data = _search_paced({"search": "some title", "per-page": 5})
+    assert data == {"results": [{"title": "ok"}]}
+    assert len(calls) == 2  # 1 essai (429) + 1 retentative (succès)
+
+
+def test_search_paced_gives_up_cleanly_on_long_429(cache_dir, monkeypatch):
+    monkeypatch.setattr(requests, "get",
+                         lambda *a, **k: _FakeResponse(status_code=429, headers={"Retry-After": "999"}))
+    monkeypatch.setattr("time.sleep", lambda *_: None)
+    with pytest.raises(QuotaExceeded) as exc_info:
+        _search_paced({"search": "some title", "per-page": 5})
+    assert exc_info.value.retry_after_seconds == 999
+    assert 999 > SEARCH_RETRY_MAX_WAIT
