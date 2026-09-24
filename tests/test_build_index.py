@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from scripts import build_index
 from backend.app.preprocess import PREPROCESS_VERSION
@@ -26,6 +27,24 @@ def test_index_cache_key_is_stable_and_content_based(tmp_path, monkeypatch):
     corpus.write_bytes(b"v2")
     assert build_index.index_cache_key() != k1
     assert len(k1) == 32
+
+
+def test_index_cache_key_depends_on_corpus_code(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_index.config, "CORPUS_EXCEL", tmp_path / "corpus.xlsx")
+    monkeypatch.setattr(build_index.config, "W2V_EXTRA", tmp_path / "extra.txt")
+    monkeypatch.setattr(build_index.config, "W2V_CS", tmp_path / "cs.txt")
+    code = tmp_path / "corpus.py"
+    code.write_text("v1")
+    monkeypatch.setattr(build_index, "CORPUS_CODE", code)
+    k1 = build_index.index_cache_key()
+    assert build_index.index_cache_key() == k1          # déterministe
+    code.write_text("v2")
+    assert build_index.index_cache_key() != k1
+
+
+def test_corpus_code_points_to_real_module():
+    from backend.app import corpus
+    assert build_index.CORPUS_CODE.resolve() == Path(corpus.__file__).resolve()
 
 
 def test_restored_index_is_not_stale_after_touch(tmp_path, monkeypatch):

@@ -19,6 +19,8 @@ from backend.app.word2vec import train_word2vec  # noqa: E402
 DOC_TERMS = config.MODELS_DIR / "doc_terms.json"
 W2V_FILE = config.MODELS_DIR / "w2v.kv"
 FINGERPRINT = config.MODELS_DIR / "fingerprint.txt"
+# Code qui construit Document.text (entrée du prétraitement) : le modifier change l'index.
+CORPUS_CODE = config.ROOT / "backend" / "app" / "corpus.py"
 
 
 def fingerprint(path: Path) -> str:
@@ -39,7 +41,8 @@ def index_cache_key() -> str:
 
 def _current() -> str:
     return (f"{fingerprint(config.CORPUS_EXCEL)}|{fingerprint(config.W2V_EXTRA)}|"
-            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}|preprocess={PREPROCESS_VERSION}")
+            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}|preprocess={PREPROCESS_VERSION}|"
+            f"corpus_code={fingerprint(CORPUS_CODE)}")
 
 
 def _read_extra_lines(path: Path) -> list[str]:

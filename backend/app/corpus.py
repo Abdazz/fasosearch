@@ -7,7 +7,6 @@ import openpyxl
 
 COLUMNS = ["ID_document", "Title", "Abstract", "Authors", "Year", "University"]
 
-_SPACED_DASH_RE = re.compile(" [\u2014\u2013] ")
 _BARE_DASH_RE = re.compile("[\u2014\u2013]")
 
 
