@@ -2,10 +2,12 @@
 
 Critères (spec §2.1) : ≥1 auteur affilié au Burkina Faso, domaine Computer Science,
 anglais (filtre OpenAlex + langdetect), résumé de 60 à 450 mots, pas de doublon.
-Filtre « informatique » supplémentaire (is_computer_science, voir STRONG_LEXICON) : le
-filtre OpenAlex primary_topic.field.id:17 laisse passer trop d'articles hors informatique
-(économie, géologie, santé publique...), donc les termes génériques (WEAK_LEXICON : "data",
-"model", "platform"...) ne comptent plus seuls ; il faut des termes STRONG distincts.
+Filtre « informatique » (is_computer_science, voir STRONG_LEXICON) : la requête OpenAlex ne
+filtre plus par primary_topic.field.id:17 ("Computer Science"), car ce champ ne couvre que
+408 des 17 282 travaux BF_FILTER et laisse quand même passer des articles hors informatique
+(économie, géologie, santé publique...). On scanne donc tout BF_FILTER et c'est notre propre
+filtre lexical qui décide : les termes génériques (WEAK_LEXICON : "data", "model",
+"platform"...) ne comptent plus seuls, il faut des termes STRONG distincts.
 Exclusion manuelle possible via data/exclusions.txt (titre normalisé ou id OpenAlex, un par
 ligne) pour écarter au cas par cas un article encore mal classé malgré le filtre lexical.
 Sélection : ~70 articles, au plus PER_SUBFIELD par sous-domaine, les plus récents d'abord.
@@ -48,10 +50,14 @@ from backend.app.corpus import COLUMNS, load_corpus  # noqa: E402
 API = "https://api.openalex.org"
 MAILTO = "fasosearch@example.org"
 BF_FILTER = "authorships.institutions.country_code:BF,language:en,has_abstract:true"
-CS_FILTER = BF_FILTER + ",primary_topic.field.id:17"
 SELECT = "id,title,abstract_inverted_index,authorships,publication_year,doi,primary_topic"
 TARGET_NEW = 70
 PER_SUBFIELD = 15  # OpenAlex n'a que quelques sous-domaines informatiques (décision du contrôleur)
+# On ne restreint plus la requête OpenAlex à primary_topic.field.id:17 ("Computer Science") :
+# ce champ ne couvre que 408 des 17 282 travaux BF (constaté empiriquement) et laisse quand
+# même passer beaucoup d'articles hors informatique. On scanne donc tout le corpus BF_FILTER
+# et c'est is_computer_science (STRONG_LEXICON) qui décide seul de l'appartenance CS.
+BF_FETCH_LIMIT = 20000
 
 # Termes non ambigus : leur seule présence est un signal fort d'informatique.
 STRONG_LEXICON = (
@@ -302,19 +308,37 @@ def _run() -> None:
     rows, doi, todo = [], {}, []
 
     print("1/3 Affiliations des 30 articles d'origine...")
+    # Best-effort : le endpoint `search` (10 crédits/appel) est distinct des endpoints
+    # `filter` des phases 2/3 et peut être limité indépendamment (fenêtre courte). Un
+    # QuotaExceeded ici ne doit pas annuler tout le run : les affiliations restantes sont
+    # simplement laissées à vérifier manuellement (data/affiliations_a_verifier.txt), comme
+    # c'est déjà le cas quand un titre n'est pas retrouvé.
+    quota_hit_in_phase1 = False
     for d in originals:
-        uni, url = find_original_affiliation(d.title)
+        uni, url = "", None
+        if not quota_hit_in_phase1:
+            try:
+                uni, url = find_original_affiliation(d.title)
+                time.sleep(0.15)
+            except QuotaExceeded as e:
+                quota_hit_in_phase1 = True
+                print(f"  quota OpenAlex atteint (endpoint search) : affiliations restantes "
+                      f"laissées à vérifier manuellement (pause {e.retry_after_seconds}s avant la suite)")
+                time.sleep(min(e.retry_after_seconds, 90))
         if not uni:
             todo.append(f"{d.id}\t{d.title}\t{d.authors}")
         if url:
             doi[d.id] = url
         rows.append([d.id, d.title, d.abstract, d.authors, d.year, uni])
-        time.sleep(0.15)
 
-    print("2/3 Candidats : informatique, auteurs affiliés au Burkina Faso...")
+    print("2/3 Candidats : informatique (filtre lexical), auteurs affiliés au Burkina Faso...")
     exclusions = load_exclusions(config.EXCLUSIONS)
+    # Un seul passage sur tout le corpus BF_FILTER (17 282 travaux, ~87 pages à 1 crédit/page,
+    # mis en cache disque) : réutilisé pour les candidats (ci-dessous) ET le corpus Word2Vec
+    # (phase 3) -- pas de filtre OpenAlex par domaine, is_computer_science est seul juge.
+    bf_works = fetch_all(BF_FILTER, limit=BF_FETCH_LIMIT)
     cands, excluded = [], 0
-    for w in fetch_all(CS_FILTER):
+    for w in bf_works:
         c = to_candidate(w)
         if not c or norm_title(c["title"]) in seen:
             continue
@@ -327,11 +351,12 @@ def _run() -> None:
     for new_id, c in zip(next_ids(len(originals) + 1, len(chosen)), chosen):
         rows.append([new_id, c["title"], c["abstract"], c["authors"], c["year"], c["university"]])
         doi[new_id] = c["url"]
-    print(f"   {len(cands)} candidats valides ({excluded} exclus manuellement) -> {len(chosen)} retenus")
+    print(f"   {len(bf_works)} travaux BF -> {len(cands)} candidats informatique valides "
+          f"({excluded} exclus manuellement) -> {len(chosen)} retenus")
 
     print("3/3 Corpus d'entraînement Word2Vec (résumés BF non indexés)...")
     extra = []
-    for w in fetch_all(BF_FILTER, limit=6000):
+    for w in bf_works:
         t, a = clean(w.get("title")), clean(rebuild_abstract(w.get("abstract_inverted_index")))
         if t and len(a.split()) >= 40 and norm_title(t) not in seen and _is_english(a):
             extra.append(f"{t}. {a}")
