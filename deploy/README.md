@@ -30,12 +30,18 @@ Vérifier l'empreinte avant de faire confiance à ce résultat : sur le VPS, `ss
 
 Ce compte est dédié à FasoSearch : ne pas le réutiliser pour une autre application du VPS (le workflow exécute `docker logout ghcr.io` avec ce compte à la fin de chaque déploiement, ce qui déconnecterait aussi les autres usages).
 
+Depuis le PC, copier la clé publique sur le VPS :
+```bash
+scp ~/.ssh/fasosearch_deploy_key.pub <compte_admin>@<IP_DU_VPS>:/tmp/fasosearch_deploy_key.pub
+```
+Puis, sur le VPS, connecté en `<compte_admin>` :
 ```bash
 sudo adduser --disabled-password --gecos "" deploy        # [sudo]
 sudo usermod -aG docker deploy                             # [sudo]
 sudo install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
-sudo tee -a /home/deploy/.ssh/authorized_keys < fasosearch_deploy_key.pub   # [sudo] (copier d'abord la clé publique avec scp)
+sudo tee -a /home/deploy/.ssh/authorized_keys < /tmp/fasosearch_deploy_key.pub   # [sudo]
 sudo chown deploy:deploy /home/deploy/.ssh/authorized_keys && sudo chmod 600 /home/deploy/.ssh/authorized_keys
+rm /tmp/fasosearch_deploy_key.pub
 sudo install -d -o deploy -g deploy /opt/fasosearch        # [sudo]
 echo "IMAGE_TAG=latest" | sudo -u deploy tee /opt/fasosearch/.env
 ```
@@ -79,4 +85,4 @@ Actions → CI/CD → Run workflow (branche `main`, étiquette vide). Le premier
 
 - **Mettre à jour le site :** commit, puis push sur `main`.
 - **Revenir à une version :** Actions → CI/CD → Run workflow avec `image_tag` = SHA (complet ou court, 7 à 40 caractères hexadécimaux) d'un commit déjà déployé, ou `latest` ; toute autre valeur est refusée par le workflow. Sur le VPS, alternative directe : `bash /opt/fasosearch/remote-deploy.sh rollback`.
-- **Journaux :** `ssh deploy@<IP_DU_VPS> docker logs --tail 100 fasosearch`.
+- **Journaux :** `ssh -i ~/.ssh/fasosearch_deploy_key deploy@<IP_DU_VPS> docker logs --tail 100 fasosearch`.
