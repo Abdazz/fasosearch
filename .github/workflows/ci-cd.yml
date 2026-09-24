@@ -2,7 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
@@ -13,6 +13,12 @@ on:
 
 permissions:
   contents: read
+
+# Une seule exécution à la fois par branche : sur main, deux push rapprochés ne peuvent
+# plus publier ni déployer dans le désordre (la plus récente passe toujours en dernier).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   IMAGE: ghcr.io/abdazz/fasosearch
@@ -78,7 +84,7 @@ jobs:
         id: idx
         run: |
           KEY=$(python -c "from scripts.build_index import index_cache_key; print(index_cache_key())")
-          echo "key=index-$KEY-${{ hashFiles('backend/app/preprocess.py', 'backend/app/word2vec.py', 'scripts/build_index.py') }}" >> "$GITHUB_OUTPUT"
+          echo "key=index-$KEY-${{ hashFiles('backend/app/corpus.py', 'backend/app/preprocess.py', 'backend/app/word2vec.py', 'scripts/build_index.py', 'requirements-prod.txt') }}" >> "$GITHUB_OUTPUT"
       - name: Cache de l'index
         uses: actions/cache@v4
         with:
@@ -119,6 +125,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 15
+    # En plus de la concurrence du workflow (par branche) : jamais deux déploiements
+    # simultanés sur le VPS, quel que soit le déclencheur.
     concurrency:
       group: fasosearch-deploy
       cancel-in-progress: false
@@ -132,7 +140,7 @@ jobs:
     steps:
       - name: Valider l'étiquette de l'image
         run: |
-          [[ "$TAG" =~ ^[0-9a-f]{7,40}$|^latest$ ]] || { echo "Étiquette d'image invalide : $TAG"; exit 1; }
+          [[ "$TAG" =~ ^[0-9a-f]{40}$|^latest$ ]] || { echo "Étiquette d'image invalide : $TAG"; exit 1; }
       - uses: actions/checkout@v4
       - name: Clé SSH et hôte connu
         env:
@@ -164,7 +172,9 @@ jobs:
         id: verify
         run: |
           for _ in 1 2 3 4 5; do
-            if curl -fsS "$APP_URL/api/health"; then exit 0; fi
+            body=$(curl -fsS --max-time 10 "$APP_URL/api/health") || body=""
+            echo "$body"
+            if [[ "$body" == *'"documents"'* ]]; then exit 0; fi
             sleep 10
           done
           exit 1
