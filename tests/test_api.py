@@ -46,3 +46,18 @@ def test_validation_error_invalid_type(client):
     r = client.post("/api/search", json={"query": "x", "per_page": "abc"})
     assert r.status_code == 422
     assert isinstance(r.json()["detail"], str)
+
+
+def test_health(client):
+    r = client.get("/api/health")
+    assert r.status_code == 200
+    assert r.json() == {"status": "ok", "documents": 3}
+
+
+def test_health_not_shadowed_by_static_mount(engine, tmp_path, monkeypatch):  # noqa: F811
+    from backend.app import api as api_module
+    (tmp_path / "index.html").write_text("<html>spa</html>")
+    monkeypatch.setattr(api_module.config, "STATIC_DIR", tmp_path)
+    c = TestClient(api_module.create_app(engine))
+    assert c.get("/api/health").json()["status"] == "ok"
+    assert "spa" in c.get("/").text

@@ -44,6 +44,10 @@ def create_app(engine: SearchEngine) -> FastAPI:
             content={"detail": f"Paramètres invalides : {field_names}"}
         )
 
+    @app.get("/api/health")
+    def health():
+        return {"status": "ok", "documents": len(engine.docs)}
+
     @app.get("/api/stats")
     def stats():
         return engine.stats()
