@@ -15,7 +15,9 @@ Créer le dépôt **public** `abdazz/fasosearch` (sans README ni licence), puis 
 git remote add origin git@github.com:abdazz/fasosearch.git
 git push -u origin main
 ```
-Le premier workflow échouera à l'étape « deploy » tant que les étapes 3 à 7 ne sont pas faites : c'est normal.
+Le premier workflow échouera à l'étape « deploy » tant que les étapes 3 à 7 ne sont pas faites : c'est normal. Ce premier push crée automatiquement l'environnement `production` (configuré à l'étape 7) et le paquet d'image `ghcr.io/abdazz/fasosearch`.
+
+Une fois le paquet publié (fin du job « build ») : sur GitHub, profil → Packages → `fasosearch` → Package settings → Change visibility → **Public**. L'image devient téléchargeable sans authentification (retour arrière manuel sur le VPS, tests locaux).
 
 ## 3. Clé SSH dédiée (sur votre PC)
 
@@ -38,19 +40,24 @@ Puis, sur le VPS, connecté en `<compte_admin>` :
 ```bash
 sudo adduser --disabled-password --gecos "" deploy        # [sudo]
 sudo usermod -aG docker deploy                             # [sudo]
-sudo install -d -m 700 -o deploy -g deploy /home/deploy/.ssh
+sudo install -d -m 700 -o deploy -g deploy /home/deploy/.ssh                    # [sudo]
 sudo tee -a /home/deploy/.ssh/authorized_keys < /tmp/fasosearch_deploy_key.pub   # [sudo]
-sudo chown deploy:deploy /home/deploy/.ssh/authorized_keys && sudo chmod 600 /home/deploy/.ssh/authorized_keys
+sudo chown deploy:deploy /home/deploy/.ssh/authorized_keys && sudo chmod 600 /home/deploy/.ssh/authorized_keys   # [sudo]
 rm /tmp/fasosearch_deploy_key.pub
 sudo install -d -o deploy -g deploy /opt/fasosearch        # [sudo]
-echo "IMAGE_TAG=latest" | sudo -u deploy tee /opt/fasosearch/.env
+sudo -u deploy touch /opt/fasosearch/.env                  # [sudo]
 ```
+Le fichier `.env` reste vide : le premier déploiement y inscrit le SHA déployé (aucune version précédente n'existe encore, donc aucun retour arrière possible à ce stade).
 Vérifier depuis le PC : `ssh -i ~/.ssh/fasosearch_deploy_key deploy@<IP_DU_VPS> docker ps` doit afficher la liste des conteneurs.
 
-## 5. Apache (sur le VPS)
+## 5. Apache
 
+Depuis le PC, dans `sri/`, copier la configuration sur le VPS :
 ```bash
 scp deploy/apache/fasosearch.conf <compte_admin>@<IP_DU_VPS>:/tmp/
+```
+Puis, sur le VPS, connecté en `<compte_admin>` :
+```bash
 sudo a2enmod proxy proxy_http                                                   # [sudo]
 sudo cp /tmp/fasosearch.conf /etc/apache2/sites-available/fasosearch.golden-technologies.com.conf  # [sudo]
 sudo a2ensite fasosearch.golden-technologies.com.conf                           # [sudo]
@@ -64,9 +71,12 @@ sudo apache2ctl configtest && sudo systemctl reload apache2                     
 sudo certbot --apache -d fasosearch.golden-technologies.com --redirect          # [sudo]
 ```
 
-## 7. Secrets GitHub
+## 7. Environnement `production` et secrets GitHub
 
-Dépôt → Settings → Secrets and variables → Actions → New repository secret :
+Dépôt → Settings → Environments → `production` (déjà créé par le premier push de l'étape 2 : le modifier, ne pas en créer un nouveau).
+
+1. Sous « Deployment branches and tags », choisir **Selected branches and tags** et n'autoriser que `main`.
+2. Sous « Environment secrets », ajouter les quatre secrets ci-dessous (**Add environment secret**). Ne pas les créer comme secrets du dépôt (Settings → Secrets and variables → Actions → Repository secrets) : un secret de dépôt est lisible par un workflow lancé depuis n'importe quelle branche.
 
 | Secret | Valeur |
 |---|---|
@@ -75,7 +85,7 @@ Dépôt → Settings → Secrets and variables → Actions → New repository se
 | `VPS_SSH_KEY` | contenu de `~/.ssh/fasosearch_deploy_key` (clé **privée**) |
 | `VPS_KNOWN_HOSTS` | contenu de `fasosearch_known_hosts` (voir étape 3, empreinte vérifiée) |
 
-Puis Settings → Environments → New environment : `production`. Dans cet environnement, sous « Deployment branches and tags », choisir **Selected branches and tags** et n'autoriser que `main` : cela empêche un déploiement depuis une autre branche.
+La restriction à `main` ne protège les secrets que parce qu'ils sont des secrets de l'environnement : seul un job qui déclare `environment: production` et s'exécute sur `main` peut les lire. Une autre branche, même avec un workflow modifié, ne reçoit ni la clé SSH ni l'adresse du VPS. Si un ancien secret `VPS_*` existe au niveau du dépôt, le supprimer.
 
 ## 8. Premier déploiement
 
@@ -84,5 +94,5 @@ Actions → CI/CD → Run workflow (branche `main`, étiquette vide). Le premier
 ## Opérations courantes
 
 - **Mettre à jour le site :** commit, puis push sur `main`.
-- **Revenir à une version :** Actions → CI/CD → Run workflow avec `image_tag` = SHA (complet ou court, 7 à 40 caractères hexadécimaux) d'un commit déjà déployé, ou `latest` ; toute autre valeur est refusée par le workflow. Sur le VPS, alternative directe : `bash /opt/fasosearch/remote-deploy.sh rollback`.
+- **Revenir à une version :** Actions → CI/CD → Run workflow avec `image_tag` = SHA complet (40 caractères hexadécimaux, `git rev-parse <commit>`) d'un commit déjà déployé ; un SHA court est refusé par le workflow, car les images ne sont publiées que sous le SHA complet. Le workflow accepte aussi `latest`, mais c'est déconseillé pour un retour arrière : `latest` est publié avant la vérification en production et peut donc désigner la version défectueuse. Alternative directe sur le VPS, connecté en `<compte_admin>` (le fichier `.env` appartient à `deploy`) : `sudo -u deploy bash /opt/fasosearch/remote-deploy.sh rollback` **[sudo]**.
 - **Journaux :** `ssh -i ~/.ssh/fasosearch_deploy_key deploy@<IP_DU_VPS> docker logs --tail 100 fasosearch`.
