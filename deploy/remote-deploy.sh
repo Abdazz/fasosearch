@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Déploiement de FasoSearch sur le VPS (appelé par GitHub Actions en SSH).
-# Usage : remote-deploy.sh deploy <etiquette> | remote-deploy.sh rollback
+# Usage : remote-deploy.sh deploy <étiquette> | remote-deploy.sh rollback
 set -euo pipefail
 
 DIR="${FASOSEARCH_DIR:-/opt/fasosearch}"
@@ -62,7 +62,9 @@ deploy() {
     return 1
   fi
   prev="$(get_env IMAGE_TAG)"
-  if [ -n "$prev" ] && [ "$prev" != "$new" ]; then
+  # "latest" n'est jamais une cible de retour arrière : c'est une étiquette mobile, qui
+  # désigne souvent la même image que la nouvelle version (cas du premier déploiement).
+  if [ -n "$prev" ] && [ "$prev" != "$new" ] && [ "$prev" != "latest" ]; then
     set_env PREV_IMAGE_TAG "$prev"
   fi
   set_env IMAGE_TAG "$new"
@@ -82,7 +84,7 @@ deploy() {
 }
 
 case "${1:-}" in
-  deploy) [ -n "${2:-}" ] || { echo "Usage : $0 deploy <etiquette>" >&2; exit 2; }; deploy "$2" ;;
+  deploy) [ -n "${2:-}" ] || { echo "Usage : $0 deploy <étiquette>" >&2; exit 2; }; deploy "$2" ;;
   rollback) rollback ;;
-  *) echo "Usage : $0 deploy <etiquette> | $0 rollback" >&2; exit 2 ;;
+  *) echo "Usage : $0 deploy <étiquette> | $0 rollback" >&2; exit 2 ;;
 esac

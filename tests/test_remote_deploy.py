@@ -122,3 +122,33 @@ def test_deploy_survives_images_listing_failure(env):
     r = run(env, "deploy", "good", extra_env={"FAKE_IMAGES_FAIL": "1"})
     assert r.returncode == 0, r.stderr
     assert "Déploiement réussi" in r.stdout
+
+
+def test_first_deploy_never_records_latest_as_previous(env):
+    d, _ = env
+    (d / ".env").write_text("IMAGE_TAG=latest\n")   # ancien amorçage du runbook
+    r = run(env, "deploy", "good")
+    assert r.returncode == 0, r.stderr
+    assert read_env(d) == {"IMAGE_TAG": "good"}
+
+
+def test_first_deploy_with_empty_env_records_no_previous(env):
+    d, _ = env
+    (d / ".env").write_text("")                     # amorçage actuel du runbook
+    r = run(env, "deploy", "good")
+    assert r.returncode == 0, r.stderr
+    assert read_env(d) == {"IMAGE_TAG": "good"}
+
+
+def test_first_deploy_unhealthy_with_latest_seed_has_no_rollback_target(env):
+    d, _ = env
+    (d / ".env").write_text("IMAGE_TAG=latest\n")
+    r = run(env, "deploy", "bad")
+    assert r.returncode != 0
+    assert "PREV_IMAGE_TAG" not in read_env(d)
+    assert "aucune version" in r.stderr.lower()
+
+
+def test_usage_message_is_accented(env):
+    r = run(env)
+    assert "<étiquette>" in r.stderr
