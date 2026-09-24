@@ -64,8 +64,11 @@ Sans `models/`, `lang_models/` ou `nltk_data/`, relancer respectivement
 
 Les 60 articles ajoutés à la base d'origine (30 articles) viennent d'**OpenAlex**
 (https://openalex.org), une base bibliographique ouverte qui agrège les métadonnées de
-sources comme IEEE Xplore, ACM, arXiv, Springer, Elsevier, etc. : le champ DOI de chaque
-article (`data/doi.json`) pointe vers l'éditeur d'origine. Limite connue : un article dont
+sources comme IEEE Xplore, ACM, arXiv, Springer, Elsevier, etc. Le bouton « Source » de la
+fiche d'un article s'appuie sur la colonne `URL` de `data/base_complete.xlsx`, remplie une
+seule fois par `scripts/add_urls.py` (page éditeur ou DOI, jamais une URL OpenAlex) ;
+`data/doi.json` n'est conservé que comme donnée d'entrée de ce script, pas comme lien affiché.
+Limite connue : un article dont
 le résumé n'est pas disponible dans OpenAlex (`has_abstract:false`) ne peut pas être indexé,
 même s'il correspond au filtre d'affiliation et de domaine ; ce n'est donc pas un échantillon
 exhaustif des publications burkinabè en informatique, seulement de celles dont le résumé est
@@ -85,7 +88,8 @@ articles encore mal classés (ex. usage de l'IA en cardiologie, en épidémiolog
 malgré le filtre lexical : voir `data/exclusions.txt` (122 titres exclus, avec le motif de
 chaque exclusion en commentaire).
 
-Répartition des éditeurs des 60 articles ajoutés (préfixe DOI, `data/doi.json`) :
+Répartition des éditeurs des 60 articles ajoutés (préfixe DOI, `data/doi.json`, donnée
+d'entrée de `scripts/add_urls.py` et non le lien affiché dans l'application) :
 
 | Éditeur | Articles |
 |---|---|
