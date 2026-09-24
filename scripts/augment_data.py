@@ -2,9 +2,12 @@
 
 Critères (spec §2.1) : ≥1 auteur affilié au Burkina Faso, domaine Computer Science,
 anglais (filtre OpenAlex + langdetect), résumé de 60 à 450 mots, pas de doublon.
-Filtre « informatique » supplémentaire : titre + résumé doivent contenir au moins 2
-termes distincts du lexique CS_LEXICON (le filtre OpenAlex primary_topic.field.id:17
-laisse passer trop d'articles hors informatique — économie, géologie, santé publique...).
+Filtre « informatique » supplémentaire (is_computer_science, voir STRONG_LEXICON) : le
+filtre OpenAlex primary_topic.field.id:17 laisse passer trop d'articles hors informatique
+(économie, géologie, santé publique...), donc les termes génériques (WEAK_LEXICON : "data",
+"model", "platform"...) ne comptent plus seuls ; il faut des termes STRONG distincts.
+Exclusion manuelle possible via data/exclusions.txt (titre normalisé ou id OpenAlex, un par
+ligne) pour écarter au cas par cas un article encore mal classé malgré le filtre lexical.
 Sélection : ~70 articles, au plus PER_SUBFIELD par sous-domaine, les plus récents d'abord.
 
 Cache disque : chaque réponse OpenAlex 200 est écrite dans data/openalex_cache/<sha1>.json ;
@@ -19,6 +22,9 @@ Produit :
   data/doi.json             id -> lien DOI/OpenAlex
   data/affiliations_a_verifier.txt   originaux dont l'affiliation n'a pas été trouvée
   data/openalex_cache/      cache disque des réponses OpenAlex (ignoré par git)
+
+Consomme (committé, édité à la main) :
+  data/exclusions.txt       titres normalisés / ids OpenAlex à écarter des candidats
 
 Usage : python scripts/augment_data.py   (nécessite internet)
 """
@@ -47,19 +53,33 @@ SELECT = "id,title,abstract_inverted_index,authorships,publication_year,doi,prim
 TARGET_NEW = 70
 PER_SUBFIELD = 15  # OpenAlex n'a que quelques sous-domaines informatiques (décision du contrôleur)
 
-CS_LEXICON = (
-    "algorithm", "software", "network", "internet", "computer", "computing", "data", "database",
-    "machine learning", "deep learning", "neural", "learning model", "classification", "classifier",
-    "clustering", "dataset", "artificial intelligence", "ontology", "semantic", "web", "cloud",
-    "security", "cyber", "encryption", "authentication", "protocol", "wireless", "sensor", "iot",
-    "routing", "blockchain", "image processing", "computer vision", "segmentation",
-    "detection model", "recognition", "natural language", "nlp", "text mining",
-    "information system", "information retrieval", "digital", "mobile application",
-    "simulation model", "optimization algorithm", "programming", "server", "architecture",
-    "framework", "platform", "big data", "analytics", "prediction model", "convolutional",
-    "transformer", "embedding", "graph", "e-learning", "e-health", "gis", "remote sensing",
-    "satellite image", "drone", "uav",
+# Termes non ambigus : leur seule présence est un signal fort d'informatique.
+STRONG_LEXICON = (
+    "algorithm", "software", "computer", "computing", "machine learning", "deep learning",
+    "neural network", "artificial intelligence", "dataset", "classifier", "clustering",
+    "database", "ontology", "semantic web", "cloud computing", "cybersecurity",
+    "security protocol", "encryption", "authentication", "network protocol", "routing",
+    "wireless sensor", "iot", "internet of things", "blockchain", "computer vision",
+    "image processing", "natural language processing", "nlp", "text mining",
+    "information retrieval", "information system", "big data", "convolutional",
+    "transformer", "embedding", "remote sensing image", "uav", "drone", "programming",
+    "operating system", "distributed system", "edge computing", "fog computing",
+    "internet", "e-learning platform",
 )
+
+# Termes génériques : trop ambigus pour compter seuls (ex. "data", "model", "platform" se
+# retrouvent dans des articles d'économie, de santé publique, d'agriculture...). Ils ne sont
+# pas utilisés par is_computer_science, mais restent documentés/disponibles (CS_LEXICON).
+WEAK_LEXICON = (
+    "data", "model", "digital", "platform", "framework", "analytics", "graph",
+    "simulation model", "prediction model", "web", "mobile application",
+    "network", "security", "cyber", "sensor", "wireless", "protocol", "semantic", "cloud",
+    "segmentation", "detection model", "recognition", "learning model", "classification",
+    "natural language", "satellite image", "gis", "e-health", "e-learning",
+    "optimization algorithm", "architecture", "server",
+)
+
+CS_LEXICON = STRONG_LEXICON + WEAK_LEXICON  # >= 60 termes (contrat historique, cf. tests)
 
 
 class QuotaExceeded(Exception):
@@ -122,11 +142,25 @@ def next_ids(start: int, count: int) -> list[str]:
     return ["Document_%02d" % i for i in range(start, start + count)]
 
 
-def is_computer_science(text: str) -> bool:
-    """Vrai si `text` (titre + résumé) contient au moins 2 termes distincts de CS_LEXICON."""
+def _strong_terms_in(text: str) -> set[str]:
     low = (text or "").lower()
-    found = {term for term in CS_LEXICON if re.search(r"\b" + re.escape(term) + r"\b", low)}
-    return len(found) >= 2
+    return {term for term in STRONG_LEXICON if re.search(r"\b" + re.escape(term) + r"\b", low)}
+
+
+def is_computer_science(title: str, abstract: str) -> bool:
+    """Article accepté comme informatique (décision du contrôleur, suite task 2b-fix) :
+
+    les termes génériques (WEAK_LEXICON : "data", "model", "platform"...) ne comptent plus
+    seuls -- ils apparaissent aussi dans des articles d'économie, de santé publique, etc.
+    On exige des termes STRONG distincts :
+      - le titre contient >= 1 terme STRONG ET titre+résumé en contiennent >= 2 distincts ; OU
+      - titre+résumé contiennent >= 3 termes STRONG distincts (même sans terme dans le titre).
+    """
+    title_strong = _strong_terms_in(title)
+    combined_strong = _strong_terms_in(f"{title or ''} {abstract or ''}")
+    if title_strong and len(combined_strong) >= 2:
+        return True
+    return len(combined_strong) >= 3
 
 
 # ---------------------------------------------------------------- accès OpenAlex + cache disque
@@ -187,7 +221,7 @@ def to_candidate(w: dict) -> dict | None:
     unis = bf_institutions(w)
     if not title or not unis or not (60 <= n_words <= 450):
         return None
-    if not is_computer_science(f"{title} {abstract}"):
+    if not is_computer_science(title, abstract):
         return None
     if not (_is_english(title) and _is_english(abstract)):
         return None
@@ -200,6 +234,26 @@ def to_candidate(w: dict) -> dict | None:
         "subfield": (pt.get("subfield") or {}).get("display_name"),
         "url": w.get("doi") or w.get("id"),
     }
+
+
+def load_exclusions(path: Path) -> set[str]:
+    """Charge la liste d'exclusion manuelle : un titre normalisé (norm_title) ou un id OpenAlex
+    par ligne ; lignes vides et commentaires ('#') ignorés."""
+    if not path.exists():
+        return set()
+    out = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        out.add(line)
+    return out
+
+
+def is_excluded(work: dict, title: str, exclusions: set[str]) -> bool:
+    """Vrai si `work` correspond à une entrée de la liste d'exclusion (titre normalisé ou id)."""
+    wid = str(work.get("id") or "")
+    return norm_title(title) in exclusions or wid in exclusions or wid.rsplit("/", 1)[-1] in exclusions
 
 
 def find_original_affiliation(title: str) -> tuple[str, str | None]:
@@ -258,17 +312,22 @@ def _run() -> None:
         time.sleep(0.15)
 
     print("2/3 Candidats : informatique, auteurs affiliés au Burkina Faso...")
-    cands = []
+    exclusions = load_exclusions(config.EXCLUSIONS)
+    cands, excluded = [], 0
     for w in fetch_all(CS_FILTER):
         c = to_candidate(w)
-        if c and norm_title(c["title"]) not in seen:
-            seen.add(norm_title(c["title"]))
-            cands.append(c)
+        if not c or norm_title(c["title"]) in seen:
+            continue
+        if is_excluded(w, c["title"], exclusions):
+            excluded += 1
+            continue
+        seen.add(norm_title(c["title"]))
+        cands.append(c)
     chosen = select_diverse(cands, TARGET_NEW, PER_SUBFIELD)
     for new_id, c in zip(next_ids(len(originals) + 1, len(chosen)), chosen):
         rows.append([new_id, c["title"], c["abstract"], c["authors"], c["year"], c["university"]])
         doi[new_id] = c["url"]
-    print(f"   {len(cands)} candidats valides -> {len(chosen)} retenus")
+    print(f"   {len(cands)} candidats valides ({excluded} exclus manuellement) -> {len(chosen)} retenus")
 
     print("3/3 Corpus d'entraînement Word2Vec (résumés BF non indexés)...")
     extra = []

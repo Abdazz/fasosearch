@@ -1,0 +1,8 @@
+# Exclusions manuelles pour scripts/augment_data.py (task 2b-fix).
+# Une entrée par ligne : soit un titre normalisé (sortie de norm_title(), minuscules,
+# sans accent ni ponctuation), soit un identifiant OpenAlex (ex. W1234567890, avec ou
+# sans le préfixe https://openalex.org/). Les lignes vides et celles commençant par '#'
+# sont ignorées. Un travail listé ici est écarté du pool de candidats ; le candidat
+# suivant (au tri par année, plafond par sous-domaine) prend automatiquement sa place.
+# Relancer scripts/augment_data.py après modification : grâce au cache disque
+# (data/openalex_cache/), la relance ne consomme aucun crédit OpenAlex supplémentaire.

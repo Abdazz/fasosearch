@@ -4,8 +4,9 @@ import pytest
 import requests
 
 from backend.app import config
-from scripts.augment_data import (CS_LEXICON, PER_SUBFIELD, QuotaExceeded, bf_institutions,
-                                  clean, is_computer_science, next_ids, norm_title,
+from scripts.augment_data import (CS_LEXICON, PER_SUBFIELD, STRONG_LEXICON, WEAK_LEXICON,
+                                  QuotaExceeded, bf_institutions, clean, is_computer_science,
+                                  is_excluded, load_exclusions, next_ids, norm_title,
                                   rebuild_abstract, select_diverse, _get)
 
 
@@ -52,21 +53,71 @@ def test_per_subfield_is_15():
 def test_cs_lexicon_has_at_least_60_terms():
     assert len(CS_LEXICON) >= 60
     assert all(t == t.lower() for t in CS_LEXICON)
+    assert set(CS_LEXICON) == set(STRONG_LEXICON) | set(WEAK_LEXICON)
 
 
-def test_is_computer_science_true_with_two_distinct_terms():
-    text = "This paper presents a machine learning model for network intrusion detection."
-    assert is_computer_science(text) is True
+def test_strong_and_weak_lexicons_are_disjoint():
+    assert set(STRONG_LEXICON) & set(WEAK_LEXICON) == set()
 
 
-def test_is_computer_science_false_with_fewer_than_two_terms():
-    assert is_computer_science("Only one keyword here: algorithm.") is False
-    assert is_computer_science("Cattle farming and agriculture in rural areas.") is False
+def test_is_computer_science_accepts_clear_cs_example():
+    title = "A Deep Learning Approach for Malware Classification"
+    abstract = ("We propose a machine learning based classifier using a convolutional "
+                "neural network architecture to analyze software behavior.")
+    assert is_computer_science(title, abstract) is True
+
+
+def test_is_computer_science_rejects_health_study_with_only_generic_terms():
+    title = "Statistical Analysis of Patient Health Data in Rural Clinics"
+    abstract = ("This study uses a statistical model to analyze patient data collected "
+                "from rural health clinics, examining trends in disease prevalence.")
+    assert is_computer_science(title, abstract) is False
+
+
+def test_is_computer_science_rejects_economics_paper_mentioning_digital_platform():
+    title = "Economic Impact of Digital Platform Adoption on Rural Markets"
+    abstract = ("This paper studies how adoption of a digital platform affects income and "
+                "market participation among smallholder farmers, using survey data and a "
+                "regression model.")
+    assert is_computer_science(title, abstract) is False
+
+
+def test_is_computer_science_needs_at_least_one_strong_term_in_title_when_only_two_total():
+    # 2 termes STRONG au total mais aucun dans le titre -> refusé (il en faudrait 3).
+    title = "Findings From a Field Study in West Africa"
+    abstract = "The team used a database and a classifier to organize survey responses."
+    assert is_computer_science(title, abstract) is False
+
+
+def test_is_computer_science_accepts_three_strong_terms_even_without_title_match():
+    title = "Findings From a Field Study in West Africa"
+    abstract = "The team used a database, a classifier and a neural network to analyze survey responses."
+    assert is_computer_science(title, abstract) is True
 
 
 def test_is_computer_science_is_case_insensitive():
-    text = "MACHINE LEARNING and NEURAL networks for classification"
-    assert is_computer_science(text) is True
+    title = "MACHINE LEARNING for Intrusion Detection"
+    abstract = "We use a CLASSIFIER and a NEURAL NETWORK."
+    assert is_computer_science(title, abstract) is True
+
+
+# ---------------------------------------------------------------- exclusion manuelle
+def test_load_exclusions_ignores_blank_and_comment_lines(tmp_path):
+    p = tmp_path / "exclusions.txt"
+    p.write_text(f"# commentaire\n\n{norm_title('Some Title Here')}\nW12345\n", encoding="utf-8")
+    assert load_exclusions(p) == {norm_title("Some Title Here"), "W12345"}
+
+
+def test_load_exclusions_missing_file_returns_empty_set(tmp_path):
+    assert load_exclusions(tmp_path / "missing.txt") == set()
+
+
+def test_is_excluded_matches_by_normalized_title_or_id():
+    work = {"id": "https://openalex.org/W999"}
+    assert is_excluded(work, "Some Title!", {norm_title("some title")})
+    assert is_excluded(work, "Other", {"W999"})
+    assert is_excluded(work, "Other", {"https://openalex.org/W999"})
+    assert not is_excluded(work, "Other", {"nope"})
 
 
 # ---------------------------------------------------------------- cache disque / quota
