@@ -1,10 +1,7 @@
 ID	Titre	Auteurs  (affiliation à compléter à la main dans la colonne University)
-Document_01	Analysis of Plaintext Features in DoH Traffic for DGA Domains Detection	Tapsoba Abdou Romaric; Ouédraogo Tounwendyam Frédéric; Zongo Wend-Benedo Simeon
 Document_02	Lightweight Authentication System for Software-Defined Wireless Sensor Networks	Amado Illy; Youssou Faye; Tiguiane Yélémou
 Document_03	A Relevant Feature Identification Approach to Detect APTs in HTTPS Traffic	Tapsoba Abdou Romaric; Ouédraogo Tounwendyam Frédéric
 Document_04	Integer Linear Programming Model for Reconfigurable Routing Problem in a Network-on-Chip with Guaranteed Traffic	Zerbo Boureima; Ouédraogo Tounwendyam Frédéric; Yélémou Tiguiane; Séré Abdoulaye
-Document_05	Evaluation of supervised learning algorithms in binary and multi-class network anomalies detection	Tapsoba Abdou Romaric; Ouédraogo Tounwendyam Frédéric
-Document_06	Vulnerabilities of Government Websites in a Developing Country – the Case of Burkina Faso	Tegawendé F. Bissyandé; Jonathan Ouoba; Daouda Ahmat; Frédéric Ouédraogo; Cedric Béré; Moustapha Bikienga; Abdoulaye Sere; Mesmin Dandjinou; Oumarou Sié
 Document_07	Focus on the Internet of Burkina: Measurement and Characterization	Frédéric T. Ouédraogo; Boureima Zerbo
 Document_08	G-Cloud: Opportunities and Security Challenges for Burkina Faso	Didier Bassolé; Tounwendyam Frédéric Ouédraogo; Oumarou Sié
 Document_09	Ego-Centered View to Overcome the Internet Measurement Challenges in West Africa	Tounwendyam Frédéric Ouédraogo; Tegawendé F. Bissyandé; Abdoulaye Séré; Mesmin Djandjnou
