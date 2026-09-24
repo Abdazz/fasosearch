@@ -14,8 +14,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     FASOSEARCH_MODE=prod FASOSEARCH_HOST=0.0.0.0 FASOSEARCH_PORT=8000
 WORKDIR /app
 COPY requirements-prod.txt .
-# Nettoyage après installation (couches pip volumineuses, cf. .superpowers/sdd rapport
-# task-5) : bytecode, répertoires de tests des paquets, et symboles de debug des .so
+# Nettoyage après installation (couches pip volumineuses) : bytecode, répertoires de
+# tests des paquets, et symboles de debug des .so
 # (binutils est installé et retiré dans la même couche pour ne rien laisser derrière).
 RUN pip install --no-cache-dir -r requirements-prod.txt \
  && find /usr/local/lib/python3.12/site-packages -type d -name '__pycache__' -exec rm -rf {} + \
@@ -27,16 +27,20 @@ RUN pip install --no-cache-dir -r requirements-prod.txt \
  && apt-get autoremove -y -qq \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --create-home --uid 10001 app
-COPY --chown=app:app backend/ backend/
-COPY --chown=app:app scripts/__init__.py scripts/build_index.py scripts/
-COPY --chown=app:app run.py ./
+COPY backend/ backend/
+COPY scripts/__init__.py scripts/build_index.py scripts/
+COPY run.py ./
 # L'empreinte de l'index couvre ces 3 fichiers : ils doivent être présents pour que
 # is_stale() soit faux en production (sinon le conteneur refuse de démarrer).
-COPY --chown=app:app data/base_complete.xlsx data/w2v_extra.txt data/w2v_cs.txt data/doi.json data/
-COPY --chown=app:app models/ models/
-COPY --chown=app:app lang_models/ lang_models/
-COPY --chown=app:app nltk_data/ nltk_data/
-COPY --from=frontend --chown=app:app /src/backend/static backend/static
+COPY data/base_complete.xlsx data/w2v_extra.txt data/w2v_cs.txt data/doi.json data/
+COPY models/ models/
+COPY lang_models/ lang_models/
+COPY nltk_data/ nltk_data/
+COPY --from=frontend /src/backend/static backend/static
+# Fichiers détenus par root : le processus (app) ne peut ni modifier son code ni ses
+# modèles. En production, le conteneur tourne en lecture seule, /tmp excepté : HOME y
+# pointe pour qu'aucun cache de bibliothèque ne tente d'écrire ailleurs.
+ENV HOME=/tmp
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
