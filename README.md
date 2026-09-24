@@ -150,7 +150,7 @@ globalement proches sur ce vocabulaire. Relevé par pas de 0.05, puis affiné pa
 prétraitement corrigé lors de la vague de correctifs finale, voir `PREPROCESS_VERSION`, a
 légèrement déplacé tous les vecteurs moyens), le seuil **0.58** ramène le nombre de requêtes
 hors intervalle à 1 sur 8 requêtes significatives (seule
-`Internet exchange points in Africa` dépasse largement, avec 58 documents), ce qui respecte
+`Internet exchange points in Africa` dépasse largement, avec 61 documents), ce qui respecte
 la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 0.58`.
 
 ## Requêtes de démonstration
@@ -168,7 +168,7 @@ la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 
 | `apprentissage automatique pour la santé` | traduction FR -> EN neuronale (« machine learning for health ») |
 | `Internet exchange points in Africa` | comparaison des scores TF-IDF / Word2Vec / BM25 (page **Comparer**) |
 | `ontologie pour l'agriculture` | traduction FR -> EN (« ontology for agriculture ») |
-| `malware` (Word2Vec) | Word2Vec trouve 5 documents, dont 3 que TF-IDF ne trouve pas du tout (`Document_03`, `Document_51`, `Document_54` : « Detecting Illicit Data Leaks on Android Smartphones... », qui ne contient jamais le mot « malware » mais dont le vecteur moyen est proche par le sens) |
+| `malware` (Word2Vec) | Word2Vec trouve 6 documents, dont 3 que TF-IDF ne trouve pas du tout (`Document_03`, `Document_49`, `Document_54` : « Detecting Illicit Data Leaks on Android Smartphones... », qui ne contient jamais le mot « malware » mais dont le vecteur moyen est proche par le sens) |
 | `security of government websites` | comparaison BM25 vs TF-IDF (même classement, échelles de score différentes) |
 | `deep learning image counting` | Word2Vec & cosinus, requête multi-termes |
 | `the of and` | requête entièrement composée de mots vides : aucun terme après prétraitement |

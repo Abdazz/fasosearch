@@ -31,7 +31,7 @@ W2V_PARAMS = dict(vector_size=100, window=5, min_count=5, epochs=30, seed=42, sg
 # puis affiné par pas de 0.01 autour du meilleur palier de 0.05 pour rester au plus proche du
 # centre de l'intervalle sans casser la démonstration ("malware" doit encore trouver
 # Document_54, qui ne contient jamais le mot mais est proche par le sens). 0.58 -> 1 seule
-# requête hors intervalle (« Internet exchange points in Africa », 58), voir README.
+# requête hors intervalle (« Internet exchange points in Africa », ~60), voir README.
 W2V_THRESHOLD = 0.58
 
 # BM25 (bonus TP 3)
