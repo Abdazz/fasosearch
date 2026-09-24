@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend.app import config  # noqa: E402
 from backend.app.corpus import load_corpus  # noqa: E402
-from backend.app.preprocess import analyze  # noqa: E402
+from backend.app.preprocess import PREPROCESS_VERSION, analyze  # noqa: E402
 from backend.app.word2vec import train_word2vec  # noqa: E402
 
 DOC_TERMS = config.MODELS_DIR / "doc_terms.json"
@@ -29,7 +29,7 @@ def fingerprint(path: Path) -> str:
 
 def _current() -> str:
     return (f"{fingerprint(config.CORPUS_EXCEL)}|{fingerprint(config.W2V_EXTRA)}|"
-            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}")
+            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}|preprocess={PREPROCESS_VERSION}")
 
 
 def _read_extra_lines(path: Path) -> list[str]:
@@ -52,6 +52,12 @@ def build() -> None:
     doc_terms = [analyze(d.text) for d in docs]
     extra_lines = _read_extra_lines(config.W2V_EXTRA)
     cs_lines = _read_extra_lines(config.W2V_CS)
+    if not extra_lines:
+        print("ATTENTION : data/w2v_extra.txt absent ou vide : Word2Vec sera entraîné sans "
+              "le corpus élargi de résumés burkinabè, qualité dégradée.")
+    if not cs_lines:
+        print("ATTENTION : data/w2v_cs.txt absent ou vide : Word2Vec sera entraîné sans le "
+              "corpus informatique, qualité dégradée. Lancez python scripts/fetch_w2v_cs.py.")
     print(f"Prétraitement de {len(extra_lines)} résumés BF + {len(cs_lines)} résumés "
           "d'informatique (entraînement Word2Vec)...")
     extra_terms = [analyze(line) for line in extra_lines]
@@ -62,7 +68,7 @@ def build() -> None:
     DOC_TERMS.write_text(json.dumps({"ids": [d.id for d in docs], "terms": doc_terms}), encoding="utf-8")
     kv.save(str(W2V_FILE))
     FINGERPRINT.write_text(_current())
-    print(f"Index construit en {time.time() - t0:.0f} s — vocabulaire Word2Vec : {len(kv.key_to_index)} mots")
+    print(f"Index construit en {time.time() - t0:.0f} s, vocabulaire Word2Vec : {len(kv.key_to_index)} mots")
 
 
 if __name__ == "__main__":
