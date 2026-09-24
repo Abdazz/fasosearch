@@ -15,6 +15,12 @@ from .resources import ensure_nltk_path
 
 ensure_nltk_path()
 
+# Incrémenté à chaque changement de comportement du pipeline (tokenisation, stopwords,
+# lemmatisation...) : scripts/build_index.py l'inclut dans son empreinte pour que l'index
+# soit reconstruit automatiquement quand le prétraitement change, même si le corpus source
+# et les paramètres Word2Vec n'ont pas bougé.
+PREPROCESS_VERSION = 2
+
 # mots vides propres aux résumés scientifiques (spec §4.1)
 DOMAIN_STOPWORDS = {
     "paper", "study", "propose", "proposed", "approach", "authors", "results", "result",
@@ -57,11 +63,31 @@ def _lemma(word: str, pos: str) -> str:
     return _lemmatizer.lemmatize(word, pos)
 
 
+@lru_cache(maxsize=100_000)
+def _keeps_ing_noun_reading(tag: str, word: str) -> bool:
+    """« learning », « routing », « processing »... : le tagueur grammatical les étiquette
+    tantôt nom (NN), tantôt verbe (VBG) selon un contexte parfois perdu ici (le POS-tagging
+    s'exécute après le retrait des mots vides, ex. "the routing of packets" -> ["routing",
+    "packets"]) — ce qui les lemmatisait en verbe ("learn", "rout") dans un cas et les
+    laissait intacts dans l'autre, alors qu'ils désignent le même concept nominal partout
+    ("machine learning", "learning algorithms" et "is learning fast" doivent produire le
+    même terme "learning").
+    Règle : un mot en "-ing" étiqueté verbe mais reconnu comme mot du vocabulaire anglais
+    garde sa forme telle quelle (lecture nominale) plutôt que d'être lemmatisé en verbe.
+    Note : `wordnet.synsets(word, pos=wordnet.NOUN)` ne suffit pas seul — certains termes
+    techniques comme "routing" n'ont aucun sens nominal propre dans ce WordNet (seulement
+    des sens verbaux "route"/"rout"), on teste donc `wordnet.synsets(word)` (toute nature)
+    pour les couvrir aussi ; les formes verbales sans aucune entrée WordNet (rares) restent
+    lemmatisées normalement.
+    """
+    return tag.startswith("V") and word.endswith("ing") and bool(wordnet.synsets(word))
+
+
 def preprocess(text: str, mode: str = "lemma") -> Preprocessed:
     out = Preprocessed(mode=mode)
     kept: list[TokenTrace] = []
     # Normalize typographic apostrophes (U+2019) to straight apostrophe (U+0027)
-    text = (text or "").replace("'", "'")
+    text = (text or "").replace("’", "'")
     # 1. tokenisation
     for raw in TOKEN_RE.findall(text):
         t = TokenTrace(raw=raw)
@@ -88,7 +114,10 @@ def preprocess(text: str, mode: str = "lemma") -> Preprocessed:
     else:
         tags = pos_tag([t.normalized for t in kept]) if kept else []
         for t, (_, tag) in zip(kept, tags):
-            t.term = t.normalized if "-" in t.normalized else _lemma(t.normalized, _wordnet_pos(tag))
+            if "-" in t.normalized or _keeps_ing_noun_reading(tag, t.normalized):
+                t.term = t.normalized
+            else:
+                t.term = _lemma(t.normalized, _wordnet_pos(tag))
     out.terms = [t.term for t in kept]
     return out
 

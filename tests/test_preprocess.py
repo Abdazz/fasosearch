@@ -47,4 +47,19 @@ def test_contractions_removed_as_stopwords_straight_apostrophe():
 
 
 def test_contractions_removed_as_stopwords_typographic_apostrophe():
-    assert preprocess("don't stop networks").terms == ["stop", "network"]
+    assert preprocess("don’t stop networks").terms == ["stop", "network"]
+
+
+def test_ing_nouns_get_consistent_lemma_regardless_of_pos_context():
+    # "learning"/"routing" sont tantôt étiquetés nom, tantôt verbe selon le contexte
+    # (perdu ici après le retrait des mots vides) : les trois formulations doivent
+    # donner le même terme.
+    assert analyze("machine learning") == ["machine", "learning"]
+    assert analyze("learning algorithms") == ["learning", "algorithm"]
+    assert analyze("is learning fast") == ["learning", "fast"]
+    assert analyze("routing protocols") == ["routing", "protocol"]
+    assert analyze("the routing of packets") == ["routing", "packet"]
+
+
+def test_past_tense_verbs_still_lemmatize_normally():
+    assert analyze("detected") == ["detect"]
