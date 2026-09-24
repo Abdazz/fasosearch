@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: "Étiquette d'image existante à redéployer (SHA). Laisser vide pour construire le commit courant."
+        description: "Étiquette d'image existante à redéployer (SHA complet, 40 caractères hexadécimaux). Laisser vide pour construire le commit courant."
         required: false
         default: ""
 

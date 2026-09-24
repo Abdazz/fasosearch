@@ -30,7 +30,7 @@ RUN pip install --no-cache-dir -r requirements-prod.txt \
 COPY backend/ backend/
 COPY scripts/__init__.py scripts/build_index.py scripts/
 COPY run.py ./
-# L'empreinte de l'index couvre ces 3 fichiers : ils doivent être présents pour que
+# L'empreinte de l'index couvre ces 3 fichiers et backend/app/corpus.py (copié plus haut) : ils doivent être présents pour que
 # is_stale() soit faux en production (sinon le conteneur refuse de démarrer).
 COPY data/base_complete.xlsx data/w2v_extra.txt data/w2v_cs.txt data/doi.json data/
 COPY models/ models/

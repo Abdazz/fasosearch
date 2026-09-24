@@ -73,7 +73,7 @@ sudo certbot --apache -d fasosearch.golden-technologies.com --redirect          
 
 ## 7. Environnement `production` et secrets GitHub
 
-Dépôt → Settings → Environments → `production` (déjà créé par le premier push de l'étape 2 : le modifier, ne pas en créer un nouveau).
+Dépôt → Settings → Environments → `production` (normalement créé par le premier push de l'étape 2 : le modifier ; s'il n'existe pas, le créer avec ce nom exact).
 
 1. Sous « Deployment branches and tags », choisir **Selected branches and tags** et n'autoriser que `main`.
 2. Sous « Environment secrets », ajouter les quatre secrets ci-dessous (**Add environment secret**). Ne pas les créer comme secrets du dépôt (Settings → Secrets and variables → Actions → Repository secrets) : un secret de dépôt est lisible par un workflow lancé depuis n'importe quelle branche.
@@ -94,5 +94,5 @@ Actions → CI/CD → Run workflow (branche `main`, étiquette vide). Le premier
 ## Opérations courantes
 
 - **Mettre à jour le site :** commit, puis push sur `main`.
-- **Revenir à une version :** Actions → CI/CD → Run workflow avec `image_tag` = SHA complet (40 caractères hexadécimaux, `git rev-parse <commit>`) d'un commit déjà déployé ; un SHA court est refusé par le workflow, car les images ne sont publiées que sous le SHA complet. Le workflow accepte aussi `latest`, mais c'est déconseillé pour un retour arrière : `latest` est publié avant la vérification en production et peut donc désigner la version défectueuse. Alternative directe sur le VPS, connecté en `<compte_admin>` (le fichier `.env` appartient à `deploy`) : `sudo -u deploy bash /opt/fasosearch/remote-deploy.sh rollback` **[sudo]**.
+- **Revenir à une version :** Actions → CI/CD → Run workflow avec `image_tag` = SHA complet (40 caractères hexadécimaux, `git rev-parse <commit>`) d'un commit déjà déployé ; un SHA court est refusé par le workflow, car les images ne sont publiées que sous le SHA complet. Le workflow accepte aussi `latest`, mais c'est déconseillé pour un retour arrière : `latest` est publié avant la vérification en production et peut donc désigner la version défectueuse. Alternative directe sur le VPS, connecté en `<compte_admin>` (le fichier `.env` appartient à `deploy`) : `sudo -u deploy bash /opt/fasosearch/remote-deploy.sh rollback` **[sudo]**. Si une construction est déjà en cours dans Actions, utiliser cette alternative directe : un retour arrière lancé depuis Actions attend dans la même file que les push sur `main` et peut être remplacé par un push arrivé entre-temps.
 - **Journaux :** `ssh -i ~/.ssh/fasosearch_deploy_key deploy@<IP_DU_VPS> docker logs --tail 100 fasosearch`.
