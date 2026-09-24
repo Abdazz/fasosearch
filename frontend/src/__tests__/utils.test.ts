@@ -21,6 +21,19 @@ describe("uniAbbr", () => {
     expect(uniAbbr("Institut de Recherche en Sciences Appliquées")).toBe("IRSA");
     expect(uniAbbr("")).toBe("?");
   });
+
+  it("connaît les renommages et cas particuliers du corpus réel (M1)", () => {
+    // L'Université de Koudougou a été renommée Université Norbert Zongo en 2017 : même
+    // institution, donc même abréviation (et donc même couleur) que "Université Norbert Zongo".
+    expect(uniAbbr("University of Koudougou")).toBe("UNZ");
+    expect(uniAbbr("Université de Koudougou")).toBe("UNZ");
+    expect(uniAbbr("Institut de l'Environnement et Recherches Agricoles")).toBe("INERA");
+    expect(uniAbbr("Institut Supérieur de l'Informatique et de Gestion")).toBe("ISIG");
+    expect(uniAbbr("Université Ouaga II")).toBe("UO2");
+    // Nom sans espaces : les initiales calculées ("A") ne feraient qu'une seule lettre ->
+    // repli sur les 4 premières lettres du nom.
+    expect(uniAbbr("AFRICSanté")).toBe("AFRI");
+  });
 });
 
 describe("fmtScore", () => {

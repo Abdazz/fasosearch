@@ -15,9 +15,15 @@ export function pageRange(page: number, pages: number): (number | "…")[] {
 
 const KNOWN: Record<string, string> = {
   "universite norbert zongo": "UNZ", "norbert zongo university": "UNZ",
+  // L'Université de Koudougou a été renommée Université Norbert Zongo en 2017 : même
+  // institution, donc même abréviation (et donc même couleur dans la carte/le corpus).
+  "universite de koudougou": "UNZ", "university of koudougou": "UNZ",
   "universite joseph ki-zerbo": "UJKZ", "joseph ki-zerbo university": "UJKZ", "universite de ouagadougou": "UO",
   "universite nazi boni": "UNB", "nazi boni university": "UNB", "universite polytechnique de bobo-dioulasso": "UPB",
   "universite thomas sankara": "UTS", "thomas sankara university": "UTS",
+  "universite ouaga ii": "UO2",
+  "institut de l'environnement et recherches agricoles": "INERA",
+  "institut superieur de l'informatique et de gestion": "ISIG",
 };
 const STOP = new Set(["de", "des", "du", "la", "le", "les", "et", "of", "the", "and", "for", "en", "d", "l"]);
 
@@ -26,7 +32,12 @@ export function uniAbbr(name: string): string {
   if (!first) return "?";
   const key = first.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   if (KNOWN[key]) return KNOWN[key];
-  return first.split(/[\s-]+/).filter((w) => w && !STOP.has(w.toLowerCase())).map((w) => w[0].toUpperCase()).join("").slice(0, 5);
+  const initials = first.split(/[\s-]+/).filter((w) => w && !STOP.has(w.toLowerCase())).map((w) => w[0].toUpperCase()).join("");
+  // Un nom sans espaces (ou dont tous les mots sauf un sont des mots vides) ne donnerait
+  // qu'une seule lettre d'initiale (ex. "AFRICSanté" -> "A") : on se rabat alors sur ses 4
+  // premières lettres, plus lisible et plus distinctif qu'un sigle à une lettre.
+  if (initials.length <= 1) return (first.replace(/[^a-zA-Z]/g, "").slice(0, 4) || initials || "?").toUpperCase();
+  return initials.slice(0, 5);
 }
 
 export const fmtScore = (v: number, model: ModelId) => (model === "bm25" ? v.toFixed(2) : v.toFixed(3));
