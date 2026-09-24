@@ -9,10 +9,18 @@ SCRIPT = Path(__file__).resolve().parents[1] / "deploy" / "remote-deploy.sh"
 
 FAKE_DOCKER = r"""#!/usr/bin/env bash
 echo "docker $*" >> "$FASOSEARCH_DIR/docker.log"
-tag=$(grep -E '^IMAGE_TAG=' "$FASOSEARCH_DIR/.env" | tail -1 | cut -d= -f2-)
+tag=$(grep -E '^IMAGE_TAG=' "$FASOSEARCH_DIR/.env" 2>/dev/null | tail -1 | cut -d= -f2-)
 case "$1" in
   inspect) if [ "$tag" = "bad" ]; then echo unhealthy; else echo healthy; fi ;;
-  images) printf '%s\n' old1 old2 good latest ;;
+  images)
+    if [ "${FAKE_IMAGES_FAIL:-}" = "1" ]; then exit 1; fi
+    printf '%s\n' old1 old2 good latest ;;
+  compose)
+    for arg in "$@"; do
+      [ "$arg" = "pull" ] && [ "${FAKE_PULL_FAIL:-}" = "1" ] && exit 1
+      [ "$arg" = "up" ] && [ "${FAKE_UP_FAIL:-}" = "1" ] && exit 1
+    done
+    ;;
 esac
 exit 0
 """
@@ -31,8 +39,10 @@ def env(tmp_path):
     return tmp_path, e
 
 
-def run(env_tuple, *args):
+def run(env_tuple, *args, extra_env=None):
     d, e = env_tuple
+    if extra_env:
+        e = dict(e, **extra_env)
     return subprocess.run(["bash", str(SCRIPT), *args], env=e, capture_output=True, text=True)
 
 
@@ -78,3 +88,37 @@ def test_rollback_command(env):
 
 def test_usage_error(env):
     assert run(env).returncode == 2
+
+
+def test_cleanup_only_removes_tagged_images(env):
+    d, _ = env
+    (d / ".env").write_text("IMAGE_TAG=old1\n")
+    r = run(env, "deploy", "good")
+    assert r.returncode == 0, r.stderr
+    log = (d / "docker.log").read_text()
+    assert "image prune" not in log
+
+
+def test_deploy_pull_failure_leaves_env_untouched(env):
+    d, _ = env
+    (d / ".env").write_text("IMAGE_TAG=old1\n")
+    r = run(env, "deploy", "good", extra_env={"FAKE_PULL_FAIL": "1"})
+    assert r.returncode != 0
+    assert read_env(d) == {"IMAGE_TAG": "old1"}
+    assert "téléchargement" in r.stderr.lower()
+
+
+def test_deploy_up_failure_restores_previous_tag(env):
+    d, _ = env
+    (d / ".env").write_text("IMAGE_TAG=old1\n")
+    r = run(env, "deploy", "good", extra_env={"FAKE_UP_FAIL": "1"})
+    assert r.returncode != 0
+    assert read_env(d)["IMAGE_TAG"] == "old1"
+
+
+def test_deploy_survives_images_listing_failure(env):
+    d, _ = env
+    (d / ".env").write_text("IMAGE_TAG=old1\n")
+    r = run(env, "deploy", "good", extra_env={"FAKE_IMAGES_FAIL": "1"})
+    assert r.returncode == 0, r.stderr
+    assert "Déploiement réussi" in r.stdout

@@ -30,13 +30,12 @@ wait_healthy() {
 
 cleanup() {
   local current="$1" previous="$2" tag
-  docker images "$IMAGE" --format '{{.Tag}}' | while read -r tag; do
+  { docker images "$IMAGE" --format '{{.Tag}}' 2>/dev/null || true; } | while read -r tag; do
     case "$tag" in
       "$current"|"$previous"|latest|"") ;;
       *) docker rmi "$IMAGE:$tag" >/dev/null 2>&1 || true ;;
     esac
   done
-  docker image prune -f >/dev/null 2>&1 || true
 }
 
 rollback() {
@@ -57,15 +56,23 @@ rollback() {
 
 deploy() {
   local new="$1" prev
+  touch "$ENV_FILE"
+  if ! IMAGE_TAG="$new" compose pull; then
+    echo "Échec du téléchargement de l'image $new : la version en place est conservée." >&2
+    return 1
+  fi
   prev="$(get_env IMAGE_TAG)"
   if [ -n "$prev" ] && [ "$prev" != "$new" ]; then
     set_env PREV_IMAGE_TAG "$prev"
   fi
   set_env IMAGE_TAG "$new"
-  compose pull
-  compose up -d
+  if ! compose up -d; then
+    echo "Échec du démarrage du conteneur pour $new : retour à la version précédente." >&2
+    rollback || true
+    return 1
+  fi
   if wait_healthy; then
-    cleanup "$new" "$(get_env PREV_IMAGE_TAG)"
+    cleanup "$new" "$(get_env PREV_IMAGE_TAG)" || true
     echo "Déploiement réussi : $new"
     return 0
   fi
