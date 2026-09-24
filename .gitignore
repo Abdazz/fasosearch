@@ -8,3 +8,10 @@ backend/static/
 .superpowers/
 .playwright-mcp/
 data/openalex_cache/
+
+# Fichiers de Claude (assistant de développement) : jamais versionnés
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+docs/superpowers/
