@@ -5,20 +5,26 @@ import { ApiError, api } from "../api";
 import { usePrefs } from "../prefs";
 import { navigate } from "../router";
 import type { CorpusResponse } from "../types";
-import { uniColor } from "../utils";
+import { fmtNum, uniColor, uniColorMap } from "../utils";
 
 export default function Corpus() {
-  const { t } = usePrefs();
+  const { t, lang } = usePrefs();
   const [data, setData] = useState<CorpusResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [uni, setUni] = useState("");
   const [year, setYear] = useState("");
+  // Infobulle des barres "par année" en position fixe (et non ancrée en CSS à la
+  // barre) : le graphique défile horizontalement, donc une infobulle ancrée en
+  // CSS pur serait tronquée par le conteneur pour les barres proches d'un bord
+  // du viewport de défilement, quelle que soit sa position. `position: fixed`,
+  // calculée depuis `getBoundingClientRect()`, échappe à ce rognage.
+  const [yearTip, setYearTip] = useState<{ x: number; y: number; label: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
     api.corpus()
-      .then((d) => { if (alive) { setData(d); setErr(null); } })
+      .then((d) => { if (alive) { uniColorMap(d.universities.map((u) => u.name)); setData(d); setErr(null); } })
       .catch((e: ApiError) => { if (alive) setErr(e.message); });
     return () => { alive = false; };
   }, []);
@@ -39,6 +45,9 @@ export default function Corpus() {
     <section className="corpus">
       <h1 className="h-display lab-h">{t("corpus.title")}</h1>
       <p className="lab-sub">{t("corpus.subtitle", { n: data.documents.length })}</p>
+      <p className="lab-muted corpus-stats">{t("corpus.stats", {
+        n: fmtNum(data.documents.length, lang), u: fmtNum(data.universities.length, lang), v: fmtNum(data.vocabulary_size, lang),
+      })}</p>
       <div className="corpus-charts">
         <div className="panel lab-block">
           <h3 className="lab-h3">{t("corpus.byUni")}</h3>
@@ -53,17 +62,33 @@ export default function Corpus() {
         <div className="panel lab-block">
           <h3 className="lab-h3">{t("corpus.byYear")}</h3>
           <div className="vbars">
-            {data.years.map((y, i) => (
-              <button key={y.year} className="vbar" aria-pressed={year === String(y.year)}
-                onClick={() => setYear(year === String(y.year) ? "" : String(y.year))}
-                style={{ opacity: year && year !== String(y.year) ? .45 : 1 }} title={String(y.year)}>
-                <b className="mono">{y.count}</b>
-                <span style={{ height: `${(y.count / maxY) * 150}px`, animationDelay: `${i * .04}s` }} />
-                <small>{String(y.year).slice(2)}</small>
-              </button>))}
+            {data.years.map((y, i) => {
+              const yearLabel = t("corpus.year.aria", { y: y.year, n: y.count });
+              const showTip = (e: { currentTarget: HTMLButtonElement }) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                setYearTip({ x: r.left + r.width / 2, y: r.top, label: yearLabel });
+              };
+              return (
+                <button key={y.year} className="vbar" aria-pressed={year === String(y.year)}
+                  onClick={() => setYear(year === String(y.year) ? "" : String(y.year))}
+                  style={{ opacity: year && year !== String(y.year) ? .45 : 1 }}
+                  aria-label={yearLabel}
+                  onMouseEnter={showTip} onFocus={showTip}
+                  onMouseLeave={() => setYearTip(null)} onBlur={() => setYearTip(null)}>
+                  <b className="mono" aria-hidden="true">{y.count}</b>
+                  <span style={{ height: `${(y.count / maxY) * 150}px`, animationDelay: `${i * .04}s` }} />
+                  <small aria-hidden="true">{String(y.year).slice(2)}</small>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
+      {/* Rendue hors de tout ancêtre `.panel` : `backdrop-filter` y crée un bloc
+          conteneur pour les descendants en `position: fixed`, ce qui décalerait
+          l'infobulle (elle serait positionnée par rapport au panneau, pas à la
+          fenêtre) et fausserait les coordonnées calculées via getBoundingClientRect(). */}
+      {yearTip && <div className="year-tip" style={{ left: yearTip.x, top: yearTip.y }}>{yearTip.label}</div>}
       <div className="corpus-filters">
         <input className="lab-input" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("corpus.filter")} aria-label={t("corpus.filter")} />
         <select value={uni} onChange={(e) => setUni(e.target.value)} aria-label={t("corpus.allUnis")}>
@@ -98,6 +123,8 @@ export default function Corpus() {
         .vbar{flex:1;min-width:26px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;font-size:11px}
         .vbar span{width:100%;border-radius:6px 6px 2px 2px;background:var(--grad);animation:growY .9s var(--ease-out) both;transform-origin:bottom}
         .vbar small{color:var(--ink-3);font-family:var(--font-mono)}
+        .year-tip{position:fixed;transform:translate(-50%,calc(-100% - 8px));background:var(--surface-solid);color:var(--ink);font:600 11.5px var(--font-mono);padding:5px 9px;border-radius:8px;white-space:nowrap;pointer-events:none;z-index:50;box-shadow:var(--card-shadow)}
+        .corpus-stats{margin-top:-6px}
         .corpus-filters{display:grid;grid-template-columns:1fr 260px 170px;gap:10px}
         .corpus-filters select{width:100%;background:var(--surface);border:var(--border-w) solid var(--line);border-radius:14px;padding:12px 14px;color:var(--ink);font:500 15px var(--font-body)}
         .table-wrap{overflow-x:auto;padding:6px}

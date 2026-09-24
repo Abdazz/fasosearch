@@ -46,11 +46,12 @@ const fr: Dict = {
   "lab.termsLabel": "→ termes", "lab.sample": "The authors propose a lightweight intrusion detection system for wireless sensor networks in Burkina Faso, 2024.",
   "lab.changedFrom": "changé depuis {w}",
   "corpus.title": "Le corpus", "corpus.subtitle": "{n} articles scientifiques en anglais, d'auteurs affiliés à des institutions du Burkina Faso.",
+  "corpus.stats": "{n} articles · {u} universités · {v} termes indexés",
   "corpus.filter": "Filtrer par titre ou auteur…", "corpus.allUnis": "Toutes les universités", "corpus.allYears": "Toutes les années",
   "corpus.byUni": "Articles par université", "corpus.byYear": "Articles par année",
   "corpus.col.id": "ID", "corpus.col.title": "Titre", "corpus.col.authors": "Auteurs", "corpus.col.uni": "Université", "corpus.col.year": "Année",
-  "corpus.row.open": "Ouvrir le document {id}",
-  "common.loading": "Chargement…", "common.uniUnknown": "Université non renseignée", "common.error": "Une erreur est survenue.",
+  "corpus.row.open": "Ouvrir le document {id}", "corpus.year.aria": "{y} : {n} articles",
+  "common.loading": "Chargement…", "common.uniUnknown": "Université non renseignée",
 };
 
 const en: Dict = {
@@ -97,11 +98,12 @@ const en: Dict = {
   "lab.termsLabel": "→ terms", "lab.sample": "The authors propose a lightweight intrusion detection system for wireless sensor networks in Burkina Faso, 2024.",
   "lab.changedFrom": "changed from {w}",
   "corpus.title": "The corpus", "corpus.subtitle": "{n} English research articles by authors affiliated with Burkina Faso institutions.",
+  "corpus.stats": "{n} articles · {u} universities · {v} indexed terms",
   "corpus.filter": "Filter by title or author…", "corpus.allUnis": "All universities", "corpus.allYears": "All years",
   "corpus.byUni": "Articles per university", "corpus.byYear": "Articles per year",
   "corpus.col.id": "ID", "corpus.col.title": "Title", "corpus.col.authors": "Authors", "corpus.col.uni": "University", "corpus.col.year": "Year",
-  "corpus.row.open": "Open document {id}",
-  "common.loading": "Loading…", "common.uniUnknown": "University not provided", "common.error": "Something went wrong.",
+  "corpus.row.open": "Open document {id}", "corpus.year.aria": "{y}: {n} articles",
+  "common.loading": "Loading…", "common.uniUnknown": "University not provided",
 };
 
 export const DICT: Record<Lang, Dict> = { fr, en };

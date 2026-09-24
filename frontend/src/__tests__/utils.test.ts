@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtScore, pageRange, uniAbbr } from "../utils";
+import { fmtScore, pageRange, uniAbbr, uniColorMap } from "../utils";
 
 describe("pageRange", () => {
   it("affiche toutes les pages quand il y en a peu", () => {
@@ -27,5 +27,16 @@ describe("fmtScore", () => {
   it("3 décimales pour les cosinus, 2 pour BM25", () => {
     expect(fmtScore(0.82345, "tfidf")).toBe("0.823");
     expect(fmtScore(7.456, "bm25")).toBe("7.46");
+  });
+});
+
+describe("uniColorMap", () => {
+  it("attribue 15 couleurs distinctes à 15 universités distinctes", () => {
+    const words = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Theta", "Iota",
+      "Kappa", "Lambda", "Mu", "Nu", "Xi", "Omicron", "Pi"];
+    const names = words.map((w) => `Université ${w}`);
+    const map = uniColorMap(names);
+    expect(Object.keys(map).length).toBe(15);
+    expect(new Set(Object.values(map)).size).toBe(15);
   });
 });
