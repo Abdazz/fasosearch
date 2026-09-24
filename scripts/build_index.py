@@ -4,6 +4,7 @@ Usage : python scripts/build_index.py
 L'index inversé, TF-IDF et BM25 sont recalculés en mémoire au démarrage (rapide) ;
 seul l'entraînement de Word2Vec (≈ 1-2 min) est mis en cache dans models/.
 """
+import hashlib
 import json
 import sys
 import time
@@ -21,10 +22,19 @@ FINGERPRINT = config.MODELS_DIR / "fingerprint.txt"
 
 
 def fingerprint(path: Path) -> str:
+    """Empreinte du CONTENU (SHA-256) : identique d'un clone a l'autre, quelle que soit la date."""
     if not path.exists():
         return "absent"
-    st = path.stat()
-    return f"{st.st_size}-{st.st_mtime_ns}"
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def index_cache_key() -> str:
+    """Cle courte pour le cache de l'index en CI (derivee de _current())."""
+    return hashlib.sha256(_current().encode("utf-8")).hexdigest()[:32]
 
 
 def _current() -> str:
