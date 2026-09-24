@@ -7,7 +7,7 @@ Moteur de recherche sur 90 articles scientifiques **en anglais** d'auteurs affil
 ## Lancer (démo)
 
 ```bash
-python run.py
+~/.venvs/sri/bin/python run.py
 ```
 Le navigateur s'ouvre sur http://127.0.0.1:8000. Tout fonctionne **hors ligne**.
 
@@ -19,12 +19,36 @@ python -m venv ~/.venvs/sri && ~/.venvs/sri/bin/pip install -r requirements.txt
 cd frontend && npm install --no-bin-links && npm run build && cd ..
 ```
 
-Ces deux étapes sont déjà faites dans ce dépôt (nécessitent internet, ne pas les relancer
-sans raison) :
+Ces deux étapes ont déjà été exécutées **sur ce poste de développement** (nécessitent
+internet, ne pas les relancer sans raison) ; elles produisent des fichiers volumineux
+non suivis par git (voir `.gitignore` et la section suivante), qu'il faut donc copier ou
+régénérer sur toute autre machine (dépôt cloné, clé USB de remise du projet…) :
 ```bash
-# (déjà fait) ~/.venvs/sri/bin/python scripts/augment_data.py    -> base complète (90 documents)
-# (déjà fait) ~/.venvs/sri/bin/python scripts/fetch_w2v_cs.py    -> corpus d'entraînement Word2Vec (informatique)
+# (déjà fait ici) ~/.venvs/sri/bin/python scripts/augment_data.py    -> base complète (90 documents)
+# (déjà fait ici) ~/.venvs/sri/bin/python scripts/fetch_w2v_cs.py    -> corpus d'entraînement Word2Vec (informatique)
 ```
+
+## Fichiers à livrer avec le projet
+
+`.gitignore` exclut volontairement les fichiers volumineux ou régénérables (modèles
+entraînés, données NLTK, build du frontend, corpus d'entraînement téléchargés) : un
+`git clone` seul ne suffit pas à faire tourner FasoSearch. Pour remettre ou déplacer le
+projet (clé USB, archive pour la soutenance...), copier en plus, depuis ce poste :
+
+| Chemin | Contenu | Obligatoire |
+|---|---|---|
+| `../données textuelles - base complète.xlsx` (hors de `sri/`, dans `Devoir/`) | les 90 documents indexés | oui |
+| `data/w2v_extra.txt` | ~16 000 résumés burkinabè (entraînement Word2Vec) | oui |
+| `data/w2v_cs.txt` | ~15 000 résumés d'informatique (entraînement Word2Vec) | oui |
+| `data/openalex_cache/` | cache des réponses OpenAlex (évite de reconsommer le quota si `augment_data.py`/`fetch_w2v_cs.py` sont relancés) | non (optionnel) |
+| `models/` | index prétraité (`doc_terms.json`) + Word2Vec entraîné (`w2v.kv`) | oui, sinon régénéré au premier lancement (15-25 min) |
+| `lang_models/` | modèle de traduction fr -> en (Argos/ctranslate2) | oui |
+| `nltk_data/` | stopwords, WordNet, tagger POS | oui |
+| `backend/static/` | build du frontend (`npm run build`) | oui, sinon régénérable via `cd frontend && npm run build` |
+
+Sans `models/`, `lang_models/` ou `nltk_data/`, relancer respectivement
+`scripts/build_index.py` (ou laisser `run.py` le faire automatiquement) et
+`scripts/setup_resources.py`.
 
 ## Origine des données
 
@@ -70,8 +94,22 @@ Répartition des éditeurs des 60 articles ajoutés (préfixe DOI, `data/doi.jso
 voir `data/affiliations_a_verifier.txt`) n'ont pas pu être rattachés automatiquement à une
 université burkinabè (titre introuvable via l'API de recherche OpenAlex, quota ou
 correspondance insuffisante) : **leur colonne University est à compléter à la main** dans
-`données textuelles - base complète.xlsx` avant la soutenance, à partir des informations
-sur les auteurs qui figurent déjà dans `data/affiliations_a_verifier.txt`.
+`données textuelles - base complète.xlsx` avant la soutenance (voir section suivante), à
+partir des informations sur les auteurs qui figurent déjà dans
+`data/affiliations_a_verifier.txt`.
+
+## À faire avant la soutenance
+
+Compléter à la main la colonne `University` de ces 4 documents dans
+`données textuelles - base complète.xlsx` (auteurs ci-dessous, source :
+`data/affiliations_a_verifier.txt`) puis relancer `scripts/build_index.py` :
+
+| Document | Auteurs |
+|---|---|
+| `Document_03` | Tapsoba Abdou Romaric ; Ouédraogo Tounwendyam Frédéric |
+| `Document_04` | Zerbo Boureima ; Ouédraogo Tounwendyam Frédéric ; Yélémou Tiguiane ; Séré Abdoulaye |
+| `Document_07` | Frédéric T. Ouédraogo ; Boureima Zerbo |
+| `Document_23` | Lydie Simone Kone/Tapsoba ; Yaya Traoré ; Sadouanouan Malo |
 
 ## Corpus d'entraînement Word2Vec
 
