@@ -170,25 +170,26 @@ def test_real_engine_cs_neighbors_are_specific_and_frequent():
         pytest.skip("modèles non construits")
     real = SearchEngine.load()
 
-    # Ensembles du brief task-17b, complétés (extension documentée dans le rapport §concerns) par
-    # des termes de cybersécurité/réseaux tout aussi topiques réellement observés dans le
-    # vocabulaire une fois le fetch OpenAlex effectué : le corpus obtenu privilégie un
-    # vocabulaire IDS très spécifique (signature-based, host-based, IDSs/NIDSs...) plutôt que les
-    # mots génériques de l'exemple du contrôleur -- topiquement correct (les anciens voisins
-    # hors-sujet "saltwater"/"porosimetry" de "intrusion" ont bien disparu), simplement plus
-    # pointu. La liste d'origine reste intégralement incluse (sous-ensemble), rien n'est retiré.
+    # Ensembles bénis par le contrôleur (task 17b, round 1 de revue) : la liste "security" du
+    # brief d'origine, telle quelle (elle passe déjà via "privacy") ; la liste "intrusion"
+    # bénie comme vocabulaire IDS standard (signature-based/anomaly-based/idss/nidss/intruder/
+    # botnet), sans les extensions ajoutées lors de la première implémentation
+    # (host-based/behavior-based/network-based/nids/hids/intruders) qui n'étaient pas
+    # autorisées.
     expected = {
         "security": {"attack", "attacks", "privacy", "authentication", "encryption",
-                      "threat", "threats", "vulnerability", "cryptographic", "malicious",
-                      "secure", "blockchain", "iot", "firewall", "firewalls",
-                      "cybersecurity", "cyberattack", "malware", "encrypted"},
+                      "threat", "threats", "vulnerability", "cryptographic", "malicious"},
         "intrusion": {"detection", "attack", "attacks", "anomaly", "ids", "malicious",
-                      "intrusions", "ddos", "intruder", "intruders", "botnet",
-                      "signature-based", "anomaly-based", "host-based", "network-based",
-                      "behavior-based", "nids", "hids", "idss", "nidss"},
+                      "intrusions", "ddos", "idss", "nidss", "intruder", "botnet",
+                      "signature-based", "anomaly-based"},
         "network": {"networks", "wireless", "routing", "protocol", "node", "nodes",
                     "sensor", "topology"},
     }
+    # Round 2 (corpus CS doublé) : "security" ne doit plus être polluée par le thème "sécurité
+    # alimentaire" burkinabè (constat initial du contrôleur). Vérifié séparément de `expected`
+    # ci-dessus car c'est une exigence négative (absence), pas une exigence positive.
+    FORBIDDEN_SECURITY_NEIGHBORS = {"food", "livelihood", "insecurity"}
+
     tested = 0
     for word, expected_terms in expected.items():
         if not real.w2v.contains(word):
@@ -200,5 +201,10 @@ def test_real_engine_cs_neighbors_are_specific_and_frequent():
         for w, _ in neighbors:
             count = real.w2v.kv.get_vecattr(w, "count")
             assert count >= 5, f"voisin '{w}' de '{word}' apparaît {count} fois (< min_count=5)"
+        if word == "security":
+            polluted = neighbor_words & FORBIDDEN_SECURITY_NEIGHBORS
+            assert not polluted, (
+                f"voisins de 'security' encore pollués par le thème 'sécurité alimentaire' : "
+                f"{polluted} (top 10 complet : {neighbors})")
     if tested == 0:
         pytest.skip("aucun des mots testés n'est dans le vocabulaire")

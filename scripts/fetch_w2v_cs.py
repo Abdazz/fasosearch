@@ -14,9 +14,12 @@ Signal Processing (1711), Hardware and Architecture (1708), Computer Science App
 
 Pour chaque sous-domaine : `filter=primary_topic.subfield.id:<ID>,language:en,
 has_abstract:true,type:article`, `sort=cited_by_count:desc`, `per-page=200`, pagination par
-curseur, au plus `MAX_PAGES_PER_SUBFIELD` pages (1 000 résultats bruts) -- budget borné à
-8 * 5 = 40 crédits (1 crédit/page non déjà en cache disque), sous la limite de 60 crédits
-fixée pour cette tâche.
+curseur, au plus `MAX_PAGES_PER_SUBFIELD` pages (2 000 résultats bruts, task 17b round 2 : le
+corpus initial de 1 000/sous-domaine ne suffisait pas à effacer le bruit "sécurité alimentaire"
+des voisins de `security` -- décision du contrôleur : doubler) -- budget borné à 8 * 10 = 80
+crédits au total sur la durée de vie du script, mais les 5 premières pages par sous-domaine sont
+déjà en cache disque depuis le run initial : un run incrémental ne consomme donc que
+8 * 5 = 40 crédits nouveaux, sous la limite de 50 crédits nouveaux fixée pour ce round.
 
 Un résumé est gardé (`f"{title}. {abstract}"`) s'il fait >= `MIN_WORDS` mots ; dédoublonné par
 titre normalisé (`norm_title`) ; les titres déjà présents dans la base indexée (90 articles)
@@ -46,7 +49,7 @@ SUBFIELDS = {
     "1706": "Computer Science Applications",
 }
 PER_PAGE = 200
-MAX_PAGES_PER_SUBFIELD = 5  # 1 000 résultats bruts max par sous-domaine
+MAX_PAGES_PER_SUBFIELD = 10  # 2 000 résultats bruts max par sous-domaine (task 17b round 2)
 MIN_WORDS = 40
 SELECT = "id,title,abstract_inverted_index"
 
