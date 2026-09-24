@@ -113,11 +113,12 @@ jobs:
   deploy:
     needs: build
     if: >-
-      always() && github.ref == 'refs/heads/main' &&
+      !cancelled() && github.ref == 'refs/heads/main' &&
       (needs.build.result == 'success' ||
        (github.event_name == 'workflow_dispatch' && inputs.image_tag != ''))
     runs-on: ubuntu-latest
     environment: production
+    timeout-minutes: 15
     concurrency:
       group: fasosearch-deploy
       cancel-in-progress: false
@@ -127,28 +128,40 @@ jobs:
     env:
       TAG: ${{ github.event.inputs.image_tag || github.sha }}
       TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+      SSH_OPTS: -o ConnectTimeout=15 -o ServerAliveInterval=15 -o StrictHostKeyChecking=yes
     steps:
+      - name: Valider l'étiquette de l'image
+        run: |
+          [[ "$TAG" =~ ^[0-9a-f]{7,40}$|^latest$ ]] || { echo "Etiquette d'image invalide : $TAG"; exit 1; }
       - uses: actions/checkout@v4
       - name: Clé SSH et hôte connu
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
       - name: Copier la configuration de déploiement
-        run: scp deploy/docker-compose.prod.yml deploy/remote-deploy.sh "$TARGET:/opt/fasosearch/"
+        run: |
+          # shellcheck disable=SC2086
+          scp $SSH_OPTS deploy/docker-compose.prod.yml deploy/remote-deploy.sh "$TARGET:/opt/fasosearch/"
       - name: Déployer
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          printf '%s' "$GHCR_TOKEN" | ssh "$TARGET" "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+          # shellcheck disable=SC2086
+          printf '%s' "$GHCR_TOKEN" | ssh $SSH_OPTS "$TARGET" "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
           set +e
-          # shellcheck disable=SC2029
-          ssh "$TARGET" "bash /opt/fasosearch/remote-deploy.sh deploy '$TAG'"
+          # shellcheck disable=SC2029,SC2086
+          ssh $SSH_OPTS "$TARGET" "bash /opt/fasosearch/remote-deploy.sh deploy '$TAG'"
           rc=$?
-          ssh "$TARGET" "docker logout ghcr.io" || true
+          # shellcheck disable=SC2086
+          ssh $SSH_OPTS "$TARGET" "docker logout ghcr.io" || true
           exit $rc
       - name: Vérification externe
+        id: verify
         run: |
           for _ in 1 2 3 4 5; do
             if curl -fsS "$APP_URL/api/health"; then exit 0; fi
@@ -156,5 +169,7 @@ jobs:
           done
           exit 1
       - name: Retour arrière
-        if: failure()
-        run: ssh "$TARGET" "bash /opt/fasosearch/remote-deploy.sh rollback"
+        if: failure() && steps.verify.outcome == 'failure'
+        run: |
+          # shellcheck disable=SC2086
+          ssh $SSH_OPTS "$TARGET" "bash /opt/fasosearch/remote-deploy.sh rollback"
