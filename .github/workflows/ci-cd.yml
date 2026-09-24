@@ -132,7 +132,7 @@ jobs:
     steps:
       - name: Valider l'étiquette de l'image
         run: |
-          [[ "$TAG" =~ ^[0-9a-f]{7,40}$|^latest$ ]] || { echo "Etiquette d'image invalide : $TAG"; exit 1; }
+          [[ "$TAG" =~ ^[0-9a-f]{7,40}$|^latest$ ]] || { echo "Étiquette d'image invalide : $TAG"; exit 1; }
       - uses: actions/checkout@v4
       - name: Clé SSH et hôte connu
         env:

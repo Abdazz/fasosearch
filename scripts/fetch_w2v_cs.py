@@ -1,5 +1,5 @@
 """Corpus d'ENTRAÎNEMENT Word2Vec (task 17b) : résumés anglais d'informatique (OpenAlex),
-de toutes origines — jamais indexés, jamais affichés comme résultat de recherche. Seul
+de toutes origines, jamais indexés, jamais affichés comme résultat de recherche. Seul
 `scripts/build_index.py` les consomme, en plus de la base indexée (90 documents burkinabè,
 inchangée) et de `data/w2v_extra.txt` (résumés BF non indexés).
 

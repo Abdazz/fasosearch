@@ -94,7 +94,7 @@ def _keeps_ing_noun_reading(tag: str, word: str) -> bool:
     """« learning », « routing », « processing »... : le tagueur grammatical les étiquette
     tantôt nom (NN), tantôt verbe (VBG) selon un contexte parfois perdu ici (le POS-tagging
     s'exécute après le retrait des mots vides, ex. "the routing of packets" -> ["routing",
-    "packets"]) — ce qui les lemmatisait en verbe ("learn", "rout") dans un cas et les
+    "packets"]) - ce qui les lemmatisait en verbe ("learn", "rout") dans un cas et les
     laissait intacts dans l'autre, alors qu'ils désignent le même concept nominal partout
     ("machine learning", "learning algorithms" et "is learning fast" doivent produire le
     même terme "learning").
@@ -154,6 +154,6 @@ def analyze(text: str) -> list[str]:
 
 
 def word_forms(word: str) -> set[str]:
-    """Lemmes possibles d'un mot isolé (nom, verbe, adjectif) — pour surligner un texte."""
+    """Lemmes possibles d'un mot isolé (nom, verbe, adjectif) - pour surligner un texte."""
     low = word.lower()
     return {low} | {_lemma(low, p) for p in (wordnet.NOUN, wordnet.VERB, wordnet.ADJ)}

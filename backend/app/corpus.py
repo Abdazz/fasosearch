@@ -7,14 +7,14 @@ import openpyxl
 
 COLUMNS = ["ID_document", "Title", "Abstract", "Authors", "Year", "University"]
 
-_SPACED_DASH_RE = re.compile(r" [—–] ")
-_BARE_DASH_RE = re.compile(r"[—–]")
+_SPACED_DASH_RE = re.compile(" [\u2014\u2013] ")
+_BARE_DASH_RE = re.compile("[\u2014\u2013]")
 
 
 def normalize_dashes(s: str) -> str:
-    """Aucun tiret cadratin (—) ni demi-cadratin (–) ne doit apparaître sur la plateforme.
+    """Aucun tiret cadratin (U+2014) ni demi-cadratin (U+2013) ne doit apparaître sur la plateforme.
 
-    " — " / " – " (entourés d'espaces) -> " - " ; "—"/"–" restants (ex. 2010–2020) -> "-".
+    " \u2014 " / " \u2013 " (entourés d'espaces) -> " - " ; "\u2014"/"\u2013" restants (ex. 2010\u20132020) -> "-".
     """
     s = _SPACED_DASH_RE.sub(" - ", s)
     return _BARE_DASH_RE.sub("-", s)

@@ -106,4 +106,4 @@ def test_build_warns_loudly_when_extra_training_corpora_missing(tmp_path, monkey
 
     out = capsys.readouterr().out
     assert "ATTENTION" in out and "w2v_extra.txt" in out and "w2v_cs.txt" in out
-    assert "—" not in out and "–" not in out
+    assert "\u2014" not in out and "\u2013" not in out

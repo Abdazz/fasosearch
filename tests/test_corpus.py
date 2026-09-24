@@ -36,13 +36,13 @@ def test_original_excel_has_30_documents():
 
 
 def test_normalize_dashes_spaced_em_and_en_dash_become_spaced_hyphen():
-    assert normalize_dashes("Burkina Faso — le cas") == "Burkina Faso - le cas"
-    assert normalize_dashes("Burkina Faso – le cas") == "Burkina Faso - le cas"
+    assert normalize_dashes("Burkina Faso \u2014 le cas") == "Burkina Faso - le cas"
+    assert normalize_dashes("Burkina Faso \u2013 le cas") == "Burkina Faso - le cas"
 
 
 def test_normalize_dashes_unspaced_dash_becomes_unspaced_hyphen():
-    assert normalize_dashes("2010–2020") == "2010-2020"
-    assert normalize_dashes("2010—2020") == "2010-2020"
+    assert normalize_dashes("2010\u20132020") == "2010-2020"
+    assert normalize_dashes("2010\u20142020") == "2010-2020"
 
 
 def test_normalize_dashes_leaves_plain_text_untouched():
@@ -55,8 +55,8 @@ def test_load_corpus_normalizes_dashes_in_text_fields_but_not_id():
     from pathlib import Path
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "c.xlsx"
-        _write(p, COLUMNS, [["Document_01", "Title — with dash", "Abs – tract",
-                              "A — B", 2024, "Uni – versity"]])
+        _write(p, COLUMNS, [["Document_01", "Title \u2014 with dash", "Abs \u2013 tract",
+                              "A \u2014 B", 2024, "Uni \u2013 versity"]])
         docs = load_corpus(p)
     doc = docs[0]
     assert doc.id == "Document_01"
