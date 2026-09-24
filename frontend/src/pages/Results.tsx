@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DocumentPanel from "../components/DocumentPanel";
 import EmptyState from "../components/EmptyState";
 import ModelSwitch from "../components/ModelSwitch";
 import Pagination from "../components/Pagination";
@@ -17,6 +18,7 @@ export default function Results({ params }: { params: URLSearchParams }) {
   const lang = (["fr", "en"].includes(params.get("lang") ?? "") ? params.get("lang") : "auto") as QueryLang;
   const page = Number(params.get("page") ?? 1) || 1;
   const pp = Number(params.get("pp") ?? 10) || 10;
+  const doc = params.get("doc");
   const [data, setData] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +72,10 @@ export default function Results({ params }: { params: URLSearchParams }) {
       {data && data.total > 0 && (
         <Pagination page={data.page} pages={data.pages} total={data.total} perPage={data.per_page}
           onPage={(p) => go({ page: p })} onPerPage={(n) => go({ pp: n, page: 1 })} />
+      )}
+      {doc && (
+        <DocumentPanel id={doc} query={q} model={model} lang={lang}
+          onClose={() => go({ doc: undefined })} onOpen={(id) => go({ doc: id })} />
       )}
       <style>{`
         .results-page{padding-top:14px}
