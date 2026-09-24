@@ -11,6 +11,22 @@ def _write(path, header, rows):
     for r in rows:
         ws.append(r)
     wb.save(path)
+    return path
+
+
+def test_load_corpus_reads_url_column(tmp_path):
+    p = _write(tmp_path / "b.xlsx", ["ID_document", "Title", "Abstract", "Authors", "Year", "University", "URL"],
+              [["Document_01", "T", "A", "X", 2020, "U", " https://doi.org/10.1/x "],
+               ["Document_02", "T2", "A2", "Y", 2021, "U", None]])
+    docs = load_corpus(p)
+    assert docs[0].url == "https://doi.org/10.1/x"
+    assert docs[1].url == ""
+
+
+def test_load_corpus_without_url_column(tmp_path):
+    p = _write(tmp_path / "b.xlsx", ["ID_document", "Title", "Abstract", "Authors", "Year", "University"],
+              [["Document_01", "T", "A", "X", 2020, "U"]])
+    assert load_corpus(p)[0].url == ""
 
 
 def test_load_corpus_with_university(tmp_path):

@@ -73,11 +73,10 @@ def _check_alignment(ids_stored: list[str], ids_docs: list[str]) -> None:
 # ---------------------------------------------------------------- moteur
 class SearchEngine:
     def __init__(self, docs: list[Document], doc_terms: list[list[str]], kv: KeyedVectors,
-                 doi: dict | None = None, translator: Translator | None = None):
+                 translator: Translator | None = None):
         self.docs = docs
         self.doc_terms = doc_terms
         self.by_id = {d.id: i for i, d in enumerate(docs)}
-        self.doi = doi or {}
         self.index = InvertedIndex.build(doc_terms)
         self.tfidf = TfidfModel(self.index)
         self.bm25 = BM25Model(self.index)
@@ -92,8 +91,7 @@ class SearchEngine:
         docs = load_corpus(config.CORPUS_EXCEL)
         stored = json.loads(DOC_TERMS.read_text(encoding="utf-8"))
         _check_alignment(stored["ids"], [d.id for d in docs])
-        doi = json.loads(config.DOI_JSON.read_text()) if config.DOI_JSON.exists() else {}
-        return cls(docs, stored["terms"], KeyedVectors.load(str(W2V_FILE)), doi)
+        return cls(docs, stored["terms"], KeyedVectors.load(str(W2V_FILE)))
 
     # -- requête
     def analyze_query(self, query: str, lang: str = "auto", model: str = "tfidf") -> dict:
@@ -186,7 +184,7 @@ class SearchEngine:
                            "threshold": config.W2V_THRESHOLD if model == "w2v" else None,
                            "contributions": self._contributions(model, terms, d)}
         return {
-            "document": {**doc.to_dict(), "url": self.doi.get(doc_id),
+            "document": {**doc.to_dict(), "url": doc.url or None,
                          "abstract": highlight(doc.abstract, set(terms))},
             "explanation": explanation,
             "neighbors": {t: [{"word": w, "similarity": round(s, 3)} for w, s in self.w2v.neighbors(t)]
