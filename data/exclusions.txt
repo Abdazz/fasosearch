@@ -112,3 +112,11 @@ alienormethodtosolvemultiobjectivelinearprogrammingmolp
 # fiable pour l'un des deux). Voir doi.json : 10.1016/j.procs.2024.05.185 (Iris Liveness
 # Detection) vs 10.1016/j.procs.2024.05.175 (cotton phytosanitary ontology).
 afastirislivenessdetectionforembeddedsystemsusingtexturalfeaturelevelfusionalgorithm
+
+# --- Biologie / agronomie via vision par ordinateur (fix round 2, contrôleur) : l'objet
+# d'étude reste biologique/agronomique (écologie des poissons, viticulture) ; la vision par
+# ordinateur n'est qu'un outil de mesure, pas la contribution de l'article, même si le titre
+# nomme des algorithmes de vision (Hough Transform, RANSAC, model fitting).
+automatedandaccuratecountingofgrowthringsinotolithsbasedonhoughtransformanddeeplearning
+aframeworkforageestimationoffishfromotolithssynergybetweenransacanddeepneuralnetworks
+grapeberrycalibrationbycomputervisionusingellipticalmodelfitting

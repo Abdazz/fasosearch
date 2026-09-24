@@ -149,6 +149,9 @@ def next_ids(start: int, count: int) -> list[str]:
 
 
 def _strong_terms_in(text: str) -> set[str]:
+    # \bterm\b est délibérément insensible au pluriel (ex. "algorithm" ne matche pas
+    # "algorithms") : décision du contrôleur — cela rend le filtre plus strict (moins de
+    # faux positifs), donc ce comportement est conservé tel quel, ne pas le "corriger".
     low = (text or "").lower()
     return {term for term in STRONG_LEXICON if re.search(r"\b" + re.escape(term) + r"\b", low)}
 
