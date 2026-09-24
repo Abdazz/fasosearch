@@ -7,6 +7,4 @@ frontend/node_modules/
 backend/static/
 .superpowers/
 .playwright-mcp/
-data/w2v_extra.txt
-data/w2v_cs.txt
 data/openalex_cache/

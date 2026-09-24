@@ -37,10 +37,9 @@ projet (clé USB, archive pour la soutenance...), copier en plus, depuis ce post
 
 | Chemin | Contenu | Obligatoire |
 |---|---|---|
-| `../données textuelles - base complète.xlsx` (hors de `sri/`, dans `Devoir/`) | les 90 documents indexés | oui |
-| `data/w2v_extra.txt` | ~16 000 résumés burkinabè (entraînement Word2Vec) | oui |
-| `data/w2v_cs.txt` | ~15 000 résumés d'informatique (entraînement Word2Vec) | oui |
-| `data/openalex_cache/` | cache des réponses OpenAlex (évite de reconsommer le quota si `augment_data.py`/`fetch_w2v_cs.py` sont relancés) | non (optionnel) |
+| `data/base_complete.xlsx` | les 90 documents indexés | oui |
+| `data/original/donnees_textuelles.xlsx` | les 30 documents originaux (copie en lecture seule) | oui |
+| `data/openalex_cache/` | cache des réponses OpenAlex (évite de reconsommer le quota) | non (optionnel) |
 | `models/` | index prétraité (`doc_terms.json`) + Word2Vec entraîné (`w2v.kv`) | oui, sinon régénéré au premier lancement (15-25 min) |
 | `lang_models/` | modèle de traduction fr -> en (Argos/ctranslate2) | oui |
 | `nltk_data/` | stopwords, WordNet, tagger POS | oui |
@@ -94,15 +93,13 @@ Répartition des éditeurs des 60 articles ajoutés (préfixe DOI, `data/doi.jso
 voir `data/affiliations_a_verifier.txt`) n'ont pas pu être rattachés automatiquement à une
 université burkinabè (titre introuvable via l'API de recherche OpenAlex, quota ou
 correspondance insuffisante) : **leur colonne University est à compléter à la main** dans
-`données textuelles - base complète.xlsx` avant la soutenance (voir section suivante), à
+`data/base_complete.xlsx` avant la soutenance (voir section suivante), à
 partir des informations sur les auteurs qui figurent déjà dans
 `data/affiliations_a_verifier.txt`.
 
 ## À faire avant la soutenance
 
-Compléter à la main la colonne `University` de ces 4 documents dans
-`données textuelles - base complète.xlsx` (auteurs ci-dessous, source :
-`data/affiliations_a_verifier.txt`) puis relancer `scripts/build_index.py` :
+Compléter la colonne University dans `data/base_complete.xlsx`, puis commit et push : le site se met à jour automatiquement. Plus précisément, pour ces 4 documents (auteurs ci-dessous, source : `data/affiliations_a_verifier.txt`), puis relancer `scripts/build_index.py` :
 
 | Document | Auteurs |
 |---|---|
@@ -130,7 +127,7 @@ Vocabulaire final (`min_count=5`) : environ 30 000 mots.
 
 | Critère | Où le voir |
 |---|---|
-| Augmentation des données | `scripts/augment_data.py`, fichier `données textuelles - base complète.xlsx`, page **Corpus** |
+| Augmentation des données | `scripts/augment_data.py`, fichier `data/base_complete.xlsx`, page **Corpus** |
 | IHM | 6 écrans, thèmes Nuit / Faso, interface FR / EN |
 | Prétraitement | `backend/app/preprocess.py`, page **Laboratoire** |
 | Requête prétraitée | bloc « Requête -> Traduction -> Prétraitée » de chaque recherche |

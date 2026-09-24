@@ -2,11 +2,10 @@ from backend.app import config
 
 
 def test_paths_are_coherent():
-    assert config.ROOT.name == "sri"
-    assert config.DEVOIR == config.ROOT.parent
-    assert config.ORIGINAL_EXCEL.name == "données textuelles.xlsx"
-    assert config.CORPUS_EXCEL.name == "données textuelles - base complète.xlsx"
-    assert config.CORPUS_EXCEL.parent == config.DEVOIR
+    assert config.DATA_DIR == config.ROOT / "data"
+    assert config.CORPUS_EXCEL == config.DATA_DIR / "base_complete.xlsx"
+    assert config.ORIGINAL_EXCEL == config.DATA_DIR / "original" / "donnees_textuelles.xlsx"
+    assert not hasattr(config, "DEVOIR")
 
 
 def test_constants_match_spec():
