@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { api } from "../api";
 import { usePrefs } from "../prefs";
 import type { DocumentResponse, ModelId, QueryLang } from "../types";
@@ -14,10 +14,19 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
   const [err, setErr] = useState<string | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
+    // Garde contre les reponses obsoletes : si l'utilisateur ouvre un autre
+    // document (ex. via "documents similaires") avant que la reponse
+    // precedente n'arrive, on ignore cette derniere plutot que d'ecraser
+    // l'etat avec des donnees qui ne correspondent plus a `id`.
+    let alive = true;
     setD(null); setErr(null);
-    api.document(id, query, model, lang).then(setD).catch((e) => setErr(e.message));
+    api.document(id, query, model, lang)
+      .then((r) => { if (alive) setD(r); })
+      .catch((e) => { if (alive) setErr(e.message); });
+    return () => { alive = false; };
   }, [id, query, model, lang]);
 
   // Accessibilite : le focus entre dans le panneau a l'ouverture et revient
@@ -26,6 +35,14 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
     openerRef.current = document.activeElement as HTMLElement | null;
     panelRef.current?.focus();
     return () => { openerRef.current?.focus(); };
+  }, []);
+
+  // Empeche le defilement de la page derriere le panneau (molette/tactile
+  // au-dessus du voile) tant que le panneau est ouvert.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
   }, []);
 
   useEffect(() => {
@@ -53,13 +70,14 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
 
   return (
     <div className="dp-veil" onClick={onClose}>
-      <aside className="dp" ref={panelRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={t("detail.why")}>
+      <aside className="dp" ref={panelRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true"
+        aria-labelledby={d ? titleId : undefined} aria-label={d ? undefined : t("common.loading")}>
         <button className="btn dp-close" onClick={onClose}>✕ {t("detail.close")}</button>
         {err && <p className="dp-err">{err}</p>}
         {!d && !err && <div className="spinner" />}
         {d && (<>
           <div className="label">{d.document.id}</div>
-          <h2 className="dp-title">{d.document.title}</h2>
+          <h2 className="dp-title" id={titleId}>{d.document.title}</h2>
           <p className="dp-authors">{d.document.authors}</p>
           <div className="dp-meta"><UniBadge name={d.document.university} />{d.document.year && <span>{d.document.year}</span>}
             {d.document.url && <a className="btn" href={d.document.url} target="_blank" rel="noreferrer">↗ {t("detail.open")}</a>}</div>
