@@ -124,6 +124,40 @@ def test_snippet_no_trailing_ellipsis_when_last_sentence_included():
     assert joined == "… CCC DDD."
 
 
+def test_score_matches_top_contribution_exactly(engine):
+    # I1 : la bague de score et la puce de contribution affichaient des valeurs
+    # différentes ("0.253" vs "0.252") car le score était arrondi côté serveur alors
+    # que les contributions restaient brutes. Pour une requête à un seul terme, le
+    # score total ET la contribution de ce terme doivent être rigoureusement égaux.
+    r = engine.search("intrusion", model="tfidf")
+    assert r["results"] and r["results"][0]["score"] == r["results"][0]["contributions"][0]["value"]
+
+    d = engine.document("Document_01", query="intrusion", model="tfidf")
+    assert d["explanation"]["score"] == d["explanation"]["contributions"][0]["value"]
+
+
+def test_document_w2v_explanation_uses_raw_cosine_even_below_threshold(engine):
+    # I2 : document() lisait le score dans `_rank()`, qui applique le seuil Word2Vec et
+    # renvoie 0.0 pour tout document sous ce seuil -- le panneau affichait donc "0.000"
+    # pour un cosinus réel proche de 0.5. Le score expliqué doit être le cosinus brut,
+    # identique qu'il soit ou non au-dessus du seuil de classement.
+    terms = engine.analyze_query("cattle", model="w2v")["terms"]
+    doc_idx = engine.by_id["Document_01"]
+    q, _ = engine.w2v.text_vector(terms)
+    raw_cosine = float(engine.w2v.doc_vectors[doc_idx] @ q)
+
+    d = engine.document("Document_01", query="cattle", model="w2v")
+    assert d["explanation"]["score"] == pytest.approx(raw_cosine)
+    assert d["explanation"]["below_threshold"] == (raw_cosine < config.W2V_THRESHOLD)
+    assert d["explanation"]["threshold"] == config.W2V_THRESHOLD
+
+
+def test_document_explanation_below_threshold_is_false_for_non_w2v_models(engine):
+    d = engine.document("Document_01", query="intrusion", model="tfidf")
+    assert d["explanation"]["below_threshold"] is False
+    assert d["explanation"]["threshold"] is None
+
+
 @pytest.mark.integration
 def test_real_engine_semantics():
     from scripts.build_index import is_stale

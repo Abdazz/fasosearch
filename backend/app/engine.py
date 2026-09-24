@@ -140,8 +140,8 @@ class SearchEngine:
             doc = self.docs[d]
             results.append({
                 "rank": rank, "id": doc.id, "title": doc.title, "authors": doc.authors,
-                "university": doc.university, "year": doc.year, "score": round(s, 4),
-                "score_ratio": round(s / top, 4) if top > 0 else 0.0,
+                "university": doc.university, "year": doc.year, "score": s,
+                "score_ratio": s / top if top > 0 else 0.0,
                 "snippet": make_snippet(doc.abstract, tset),
                 "contributions": self._contributions(model, terms, d),
             })
@@ -157,7 +157,7 @@ class SearchEngine:
         for m in MODELS:
             ranked = self._rank(m, q["terms"])[:k] if q["terms"] else []
             out[m] = [{"rank": i + 1, "id": self.docs[d].id, "title": self.docs[d].title,
-                       "university": self.docs[d].university, "score": round(s, 4)}
+                       "university": self.docs[d].university, "score": s}
                       for i, (d, s) in enumerate(ranked)]
         return {"query": q, "models": out}
 
@@ -170,8 +170,20 @@ class SearchEngine:
         terms = self.analyze_query(query, lang, model)["terms"] if query.strip() else []
         explanation = None
         if terms:
-            score = dict(self._rank(model, terms)).get(d, 0.0)
-            explanation = {"model": model, "score": round(score, 4),
+            if model == "w2v":
+                # `_rank`/`w2v.score` appliquent le seuil de pertinence (W2V_THRESHOLD) et
+                # renvoient 0.0 pour tout document en dessous : ici, on veut expliquer le
+                # score même pour un document hors classement (panneau ouvert depuis
+                # "documents similaires", ou changement de modèle après coup), donc on
+                # recalcule le cosinus brut directement plutôt que de lire le classement.
+                q, _ = self.w2v.text_vector(terms)
+                score = float(self.w2v.doc_vectors[d] @ q) if q is not None else 0.0
+                below_threshold = score < config.W2V_THRESHOLD
+            else:
+                score = dict(self._rank(model, terms)).get(d, 0.0)
+                below_threshold = False
+            explanation = {"model": model, "score": score, "below_threshold": below_threshold,
+                           "threshold": config.W2V_THRESHOLD if model == "w2v" else None,
                            "contributions": self._contributions(model, terms, d)}
         return {
             "document": {**doc.to_dict(), "url": self.doi.get(doc_id),
