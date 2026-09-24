@@ -63,3 +63,26 @@ def test_ing_nouns_get_consistent_lemma_regardless_of_pos_context():
 
 def test_past_tense_verbs_still_lemmatize_normally():
     assert analyze("detected") == ["detect"]
+
+
+def test_verbal_ing_forms_still_lemmatize_to_the_verb():
+    # Round 2 (contrôle) : la première version de la règle testait `wordnet.synsets(word)`
+    # (toute nature), ce qui classait aussi "detecting" comme nom (WordNet le liste comme
+    # synonyme secondaire du synset "detection"), cassant l'appariement detect/detecting
+    # ("detecting intrusions" restait "detecting" au lieu de "detect", contrairement à
+    # "detected intrusions"). "detecting"/"attacking" n'ont pas de lecture nominale
+    # principale dans WordNet (contrairement à "learning"/"routing") et doivent donc rester
+    # lemmatisés en verbe dans tous les contextes.
+    assert analyze("detecting intrusions") == ["detect", "intrusion"]
+    assert analyze("detected intrusions") == ["detect", "intrusion"]
+    assert analyze("attacking") == ["attack"]
+    assert analyze("attacked systems") == ["attack", "system"]
+
+
+def test_cs_ing_nouns_outside_wordnet_still_kept_as_nouns():
+    # "routing" et consorts n'ont aucun sens nominal dans WordNet (seulement verbal) : la
+    # liste explicite CS_ING_NOUNS les couvre quand même, sans réintroduire le faux positif
+    # "detecting" corrigé ci-dessus.
+    assert analyze("cloud computing") == ["cloud", "computing"]
+    assert analyze("is computing fast") == ["computing", "fast"]
+    assert analyze("social networking") == ["social", "networking"]

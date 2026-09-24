@@ -19,7 +19,18 @@ ensure_nltk_path()
 # lemmatisation...) : scripts/build_index.py l'inclut dans son empreinte pour que l'index
 # soit reconstruit automatiquement quand le prétraitement change, même si le corpus source
 # et les paramètres Word2Vec n'ont pas bougé.
-PREPROCESS_VERSION = 2
+PREPROCESS_VERSION = 3
+
+# Termes techniques en "-ing" utilisés comme noms en informatique mais absents de WordNet en
+# tant que nom (`_is_canonical_noun` y renvoie False pour chacun) : sans cette liste, ils
+# seraient lemmatisés en verbe ("rout", "cach"...) selon le contexte perdu après le retrait des
+# mots vides, comme "routing" (cf. `_keeps_ing_noun_reading`). Liste volontairement réduite à
+# des termes non ambigus du domaine (aucun n'est un verbe d'usage courant dans un résumé
+# scientifique) ; tout mot déjà couvert par `_is_canonical_noun` a été retiré de cette liste.
+CS_ING_NOUNS = frozenset({
+    "routing", "computing", "networking", "clustering", "caching", "hashing", "streaming",
+    "tagging", "labeling", "labelling", "modelling", "forecasting", "tracking", "crowdsourcing",
+})
 
 # mots vides propres aux résumés scientifiques (spec §4.1)
 DOMAIN_STOPWORDS = {
@@ -64,6 +75,21 @@ def _lemma(word: str, pos: str) -> str:
 
 
 @lru_cache(maxsize=100_000)
+def _is_canonical_noun(word: str) -> bool:
+    """Vrai si `word` est le lemme canonique (le premier, le plus représentatif) d'au moins un
+    synset nominal de WordNet -- vrai pour "learning"/"processing"/"mining"/"monitoring", faux
+    pour "detecting"/"attacking".
+    Volontairement plus strict que `any(l.name() == word for s in synsets for l in s.lemmas())`
+    (testé, puis abandonné) : ce test plus large déclare aussi "detecting" nom, car WordNet le
+    liste comme synonyme secondaire du synset detection.n.04 (lemmes ['detection', 'detecting',
+    'detective_work', 'sleuthing']) -- une lecture nominale marginale, pas celle voulue ici. Ce
+    faux positif cassait l'appariement "detect"/"detecting" (ex. "detecting intrusions" restait
+    "detecting" au lieu de "detect", alors que "detected intrusions" donnait bien "detect").
+    """
+    return any(s.lemmas()[0].name().lower() == word for s in wordnet.synsets(word, pos=wordnet.NOUN))
+
+
+@lru_cache(maxsize=100_000)
 def _keeps_ing_noun_reading(tag: str, word: str) -> bool:
     """« learning », « routing », « processing »... : le tagueur grammatical les étiquette
     tantôt nom (NN), tantôt verbe (VBG) selon un contexte parfois perdu ici (le POS-tagging
@@ -72,15 +98,16 @@ def _keeps_ing_noun_reading(tag: str, word: str) -> bool:
     laissait intacts dans l'autre, alors qu'ils désignent le même concept nominal partout
     ("machine learning", "learning algorithms" et "is learning fast" doivent produire le
     même terme "learning").
-    Règle : un mot en "-ing" étiqueté verbe mais reconnu comme mot du vocabulaire anglais
-    garde sa forme telle quelle (lecture nominale) plutôt que d'être lemmatisé en verbe.
-    Note : `wordnet.synsets(word, pos=wordnet.NOUN)` ne suffit pas seul — certains termes
-    techniques comme "routing" n'ont aucun sens nominal propre dans ce WordNet (seulement
-    des sens verbaux "route"/"rout"), on teste donc `wordnet.synsets(word)` (toute nature)
-    pour les couvrir aussi ; les formes verbales sans aucune entrée WordNet (rares) restent
-    lemmatisées normalement.
+    Règle : un mot en "-ing" étiqueté verbe garde sa forme telle quelle (lecture nominale)
+    plutôt que d'être lemmatisé en verbe, uniquement s'il est un nom reconnu de WordNet
+    (`_is_canonical_noun`) ou un terme technique listé dans `CS_ING_NOUNS` (absent de WordNet
+    en tant que nom, ex. "routing"/"networking"). Toute autre forme verbale en "-ing"
+    ("detecting", "attacking"...) est lemmatisée normalement en verbe, comme sa forme au passé
+    ("detected" -> "detect", "attacking"/"attacked" -> "attack").
     """
-    return tag.startswith("V") and word.endswith("ing") and bool(wordnet.synsets(word))
+    if not (tag.startswith("V") and word.endswith("ing")):
+        return False
+    return _is_canonical_noun(word) or word in CS_ING_NOUNS
 
 
 def preprocess(text: str, mode: str = "lemma") -> Preprocessed:
