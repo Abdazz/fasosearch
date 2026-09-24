@@ -25,7 +25,13 @@ def settings() -> tuple[str, int, str]:
     if mode not in MODES:
         sys.exit(f"FASOSEARCH_MODE invalide : {mode!r} (valeurs possibles : dev, prod)")
     host = os.environ.get("FASOSEARCH_HOST", "127.0.0.1")
-    port = int(os.environ.get("FASOSEARCH_PORT", "8000"))
+    raw = os.environ.get("FASOSEARCH_PORT", "8000")
+    try:
+        port = int(raw)
+        if not (1 <= port <= 65535):
+            sys.exit(f"FASOSEARCH_PORT invalide : {raw!r} (entier entre 1 et 65535 attendu)")
+    except ValueError:
+        sys.exit(f"FASOSEARCH_PORT invalide : {raw!r} (entier entre 1 et 65535 attendu)")
     return host, port, mode
 
 
@@ -34,7 +40,7 @@ def prepare(mode: str) -> None:
     if missing:
         sys.exit(f"Ressources manquantes : {missing}\n→ lancez une fois : python scripts/setup_resources.py")
     if not config.CORPUS_EXCEL.exists():
-        sys.exit(f"Base introuvable : {config.CORPUS_EXCEL}")
+        sys.exit(f"Base introuvable : {config.CORPUS_EXCEL}\n→ lancez une fois : python scripts/augment_data.py")
     if build_index.is_stale():
         if mode == "prod":
             sys.exit("Index absent ou obsolète : en production, l'index n'est jamais reconstruit "

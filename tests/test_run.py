@@ -58,3 +58,19 @@ def test_missing_resources_exit(monkeypatch):
     with pytest.raises(SystemExit) as e:
         run.prepare("prod")
     assert "setup_resources" in str(e.value.code)
+
+
+def test_settings_rejects_invalid_port_non_numeric(monkeypatch):
+    monkeypatch.setenv("FASOSEARCH_PORT", "abc")
+    with pytest.raises(SystemExit) as e:
+        run.settings()
+    assert e.value.code not in (0, None)
+    assert "FASOSEARCH_PORT" in str(e.value.code)
+
+
+def test_settings_rejects_port_out_of_range(monkeypatch):
+    monkeypatch.setenv("FASOSEARCH_PORT", "70000")
+    with pytest.raises(SystemExit) as e:
+        run.settings()
+    assert e.value.code not in (0, None)
+    assert "FASOSEARCH_PORT" in str(e.value.code)
