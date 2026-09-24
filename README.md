@@ -99,7 +99,7 @@ partir des informations sur les auteurs qui figurent déjà dans
 
 ## À faire avant la soutenance
 
-Compléter la colonne University dans `data/base_complete.xlsx`, puis commit et push : le site se met à jour automatiquement. Plus précisément, pour ces 4 documents (auteurs ci-dessous, source : `data/affiliations_a_verifier.txt`), puis relancer `scripts/build_index.py` :
+Compléter la colonne University dans `data/base_complete.xlsx` pour les 4 documents ci-dessous (auteurs issus de `data/affiliations_a_verifier.txt`), puis commit et push : le site se met à jour automatiquement.
 
 | Document | Auteurs |
 |---|---|

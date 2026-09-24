@@ -19,7 +19,7 @@ est levée immédiatement (les autres erreurs réseau gardent 3 nouvelles tentat
 l'attrape et s'arrête sans écrire de fichier de sortie partiel.
 
 Produit :
-  Devoir/données textuelles - base complète.xlsx   (30 originaux + nouveaux)
+  data/base_complete.xlsx   (30 originaux + nouveaux)
   data/w2v_extra.txt        résumés BF non indexés (entraînement Word2Vec uniquement)
   data/doi.json             id -> lien DOI/OpenAlex
   data/affiliations_a_verifier.txt   originaux dont l'affiliation n'a pas été trouvée
