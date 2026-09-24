@@ -28,6 +28,17 @@ régénérer sur toute autre machine (dépôt cloné, clé USB de remise du proj
 # (déjà fait ici) ~/.venvs/sri/bin/python scripts/fetch_w2v_cs.py    -> corpus d'entraînement Word2Vec (informatique)
 ```
 
+## Déploiement continu
+
+Chaque push sur `main` lance GitHub Actions :
+1. tests Python et tests de l'interface ;
+2. construction de l'index (en cache) et de l'image Docker ;
+3. test de fumée de l'image ;
+4. publication sur `ghcr.io/abdazz/fasosearch` ;
+5. déploiement sur le VPS, avec contrôle de santé et retour arrière automatique.
+
+Site en ligne : https://fasosearch.golden-technologies.com. Mise en service initiale : voir `deploy/README.md`.
+
 ## Fichiers à livrer avec le projet
 
 `.gitignore` exclut volontairement les fichiers volumineux ou régénérables (modèles
