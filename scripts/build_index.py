@@ -28,7 +28,15 @@ def fingerprint(path: Path) -> str:
 
 
 def _current() -> str:
-    return f"{fingerprint(config.CORPUS_EXCEL)}|{fingerprint(config.W2V_EXTRA)}|{config.W2V_PARAMS}"
+    return (f"{fingerprint(config.CORPUS_EXCEL)}|{fingerprint(config.W2V_EXTRA)}|"
+            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}")
+
+
+def _read_extra_lines(path: Path) -> list[str]:
+    """Lignes non vides d'un fichier corpus d'entraînement Word2Vec ; fichier absent toléré."""
+    if not path.exists():
+        return []
+    return [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def is_stale() -> bool:
@@ -42,13 +50,14 @@ def build() -> None:
     docs = load_corpus(config.CORPUS_EXCEL)
     print(f"Prétraitement de {len(docs)} documents...")
     doc_terms = [analyze(d.text) for d in docs]
-    extra_lines = config.W2V_EXTRA.read_text(encoding="utf-8").splitlines() if config.W2V_EXTRA.exists() else []
-    # Filter out empty lines from w2v_extra.txt
-    extra_lines = [line for line in extra_lines if line.strip()]
-    print(f"Prétraitement de {len(extra_lines)} résumés d'entraînement Word2Vec...")
+    extra_lines = _read_extra_lines(config.W2V_EXTRA)
+    cs_lines = _read_extra_lines(config.W2V_CS)
+    print(f"Prétraitement de {len(extra_lines)} résumés BF + {len(cs_lines)} résumés "
+          "d'informatique (entraînement Word2Vec)...")
     extra_terms = [analyze(line) for line in extra_lines]
+    cs_terms = [analyze(line) for line in cs_lines]
     print("Entraînement Word2Vec (skip-gram)...")
-    kv = train_word2vec(doc_terms + extra_terms)
+    kv = train_word2vec(doc_terms + extra_terms + cs_terms)
     config.MODELS_DIR.mkdir(parents=True, exist_ok=True)
     DOC_TERMS.write_text(json.dumps({"ids": [d.id for d in docs], "terms": doc_terms}), encoding="utf-8")
     kv.save(str(W2V_FILE))

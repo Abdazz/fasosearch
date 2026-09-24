@@ -14,13 +14,16 @@ NLTK_DIR = ROOT / "nltk_data"
 LANG_MODEL_DIR = ROOT / "lang_models" / "fr_en"
 
 W2V_EXTRA = DATA_DIR / "w2v_extra.txt"
+W2V_CS = DATA_DIR / "w2v_cs.txt"  # résumés anglais d'informatique (entraînement Word2Vec uniquement, task 17b)
 DOI_JSON = DATA_DIR / "doi.json"
 AFFILIATIONS_TODO = DATA_DIR / "affiliations_a_verifier.txt"
 OPENALEX_CACHE_DIR = DATA_DIR / "openalex_cache"
 EXCLUSIONS = DATA_DIR / "exclusions.txt"
 
 # Word2Vec (skip-gram) — seed + 1 worker => entraînement reproductible
-W2V_PARAMS = dict(vector_size=100, window=5, min_count=2, epochs=30, seed=42, sg=1, workers=1)
+# min_count=5 (task 17b) : élimine les mots rares parasites (ex. "sorobouly", "liido") des
+# voisins, maintenant que le corpus d'entraînement est plus large (+ data/w2v_cs.txt).
+W2V_PARAMS = dict(vector_size=100, window=5, min_count=5, epochs=30, seed=42, sg=1, workers=1)
 W2V_THRESHOLD = 0.40
 
 # BM25 (bonus TP 3)
