@@ -14,6 +14,7 @@ LANG_MODEL_DIR = ROOT / "lang_models" / "fr_en"
 W2V_EXTRA = DATA_DIR / "w2v_extra.txt"
 W2V_CS = DATA_DIR / "w2v_cs.txt"  # résumés anglais d'informatique (entraînement Word2Vec uniquement, task 17b)
 DOI_JSON = DATA_DIR / "doi.json"
+AUTHOR_ALIASES = DATA_DIR / "author_aliases.txt"  # corrections manuelles du regroupement des auteurs
 AFFILIATIONS_TODO = DATA_DIR / "affiliations_a_verifier.txt"
 OPENALEX_CACHE_DIR = DATA_DIR / "openalex_cache"
 EXCLUSIONS = DATA_DIR / "exclusions.txt"
