@@ -5,10 +5,12 @@ import { ApiError, api } from "../api";
 import { usePrefs } from "../prefs";
 import { navigate } from "../router";
 import type { CorpusResponse } from "../types";
-import { fmtNum, uniColor, uniColorMap } from "../utils";
+import { useUniColor } from "../uniColors";
+import { fmtNum, uniColor } from "../utils";
 
 export default function Corpus() {
   const { t, lang } = usePrefs();
+  useUniColor();
   const [data, setData] = useState<CorpusResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -24,10 +26,26 @@ export default function Corpus() {
   useEffect(() => {
     let alive = true;
     api.corpus()
-      .then((d) => { if (alive) { uniColorMap(d.universities.map((u) => u.name)); setData(d); setErr(null); } })
+      .then((d) => { if (alive) { setData(d); setErr(null); } })
       .catch((e: ApiError) => { if (alive) setErr(e.message); });
     return () => { alive = false; };
   }, []);
+
+  // Masque l'infobulle plutôt que de la repositionner si la page (ou le
+  // graphique lui-même) défile ou si la fenêtre est redimensionnée pendant
+  // qu'elle est affichée : ses coordonnées, capturées une fois au survol/focus,
+  // deviendraient sinon obsolètes. Écouteurs ajoutés seulement pendant que
+  // l'infobulle est ouverte, retirés à sa fermeture ou au démontage.
+  useEffect(() => {
+    if (!yearTip) return;
+    const hide = () => setYearTip(null);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+    return () => {
+      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("resize", hide);
+    };
+  }, [yearTip]);
 
   const rows = useMemo(() => (data?.documents ?? []).filter((d) =>
     (!q || `${d.title} ${d.authors}`.toLowerCase().includes(q.toLowerCase())) &&

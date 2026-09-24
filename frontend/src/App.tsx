@@ -6,9 +6,13 @@ import Home from "./pages/Home";
 import Lab from "./pages/Lab";
 import Results from "./pages/Results";
 import { useRoute } from "./router";
+import { useUniColor } from "./uniColors";
 
 export default function App() {
   const { page, params } = useRoute();
+  // Déclenche le chargement de la palette canonique de couleurs d'université
+  // dès le démarrage de l'appli, quelle que soit la première page visitée.
+  useUniColor();
   return (
     <>
       <Backdrop />

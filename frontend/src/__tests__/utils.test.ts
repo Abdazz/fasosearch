@@ -39,4 +39,17 @@ describe("uniColorMap", () => {
     expect(Object.keys(map).length).toBe(15);
     expect(new Set(Object.values(map)).size).toBe(15);
   });
+
+  it("attribue les mêmes couleurs à la même université quel que soit l'ordre de la liste fournie", () => {
+    // Régression : Lab et Corpus appelaient chacun uniColorMap avec des listes
+    // différentes (une seule affiliation par point de carte vs toutes les
+    // affiliations séparées), ce qui pouvait faire varier l'ordre de tri et donc
+    // la couleur assignée à une même université. Construire la carte à partir de
+    // la même liste, dans un ordre différent, doit toujours produire le même
+    // résultat.
+    const names = ["Université Nazi Boni", "Université Joseph Ki-Zerbo", "University of Koudougou",
+      "Université Ouaga II", "Institut de Recherche Pour le Développement"];
+    const shuffled = [...names].reverse();
+    expect(uniColorMap(shuffled)).toEqual(uniColorMap(names));
+  });
 });

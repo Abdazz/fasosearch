@@ -3,10 +3,12 @@ import { api } from "../api";
 import { usePrefs } from "../prefs";
 import { navigate } from "../router";
 import type { MapPoint, NeighborsResponse, PreprocessResponse } from "../types";
-import { uniAbbr, uniColor, uniColorMap } from "../utils";
+import { useUniColor } from "../uniColors";
+import { uniAbbr, uniColor } from "../utils";
 
 export default function Lab() {
   const { t } = usePrefs();
+  useUniColor();
   const [text, setText] = useState(() => t("lab.sample"));
   const [mode, setMode] = useState<"lemma" | "stem">("lemma");
   const [pre, setPre] = useState<PreprocessResponse | null>(null);
@@ -44,7 +46,7 @@ export default function Lab() {
   useEffect(() => {
     let alive = true;
     api.map()
-      .then((m) => { if (alive) { uniColorMap(m.points.map((p) => p.university)); setPoints(m.points); } })
+      .then((m) => { if (alive) setPoints(m.points); })
       .catch(() => { if (alive) setPoints([]); });
     return () => { alive = false; };
   }, []);

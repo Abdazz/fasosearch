@@ -1,6 +1,8 @@
+import { useUniColor } from "../uniColors";
 import { uniAbbr, uniColor } from "../utils";
 
 export default function UniBadge({ name }: { name: string }) {
+  useUniColor();
   if (!name) return null;
   const all = name.split(";").map((s) => s.trim()).filter(Boolean);
   return (
