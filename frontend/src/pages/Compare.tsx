@@ -12,7 +12,7 @@ const MODELS: ModelId[] = ["tfidf", "w2v", "bm25"];
 
 export default function Compare({ params }: { params: URLSearchParams }) {
   const { t } = usePrefs();
-  const q = params.get("q") ?? "";
+  const q = (params.get("q") ?? "").trim();
   const lang = (["fr", "en"].includes(params.get("lang") ?? "") ? params.get("lang") : "auto") as QueryLang;
   const [data, setData] = useState<CompareResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);

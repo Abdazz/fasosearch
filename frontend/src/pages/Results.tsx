@@ -13,7 +13,7 @@ import type { ModelId, QueryLang, SearchResponse } from "../types";
 
 export default function Results({ params }: { params: URLSearchParams }) {
   const { t } = usePrefs();
-  const q = params.get("q") ?? "";
+  const q = (params.get("q") ?? "").trim();
   const model = (["tfidf", "w2v", "bm25"].includes(params.get("model") ?? "") ? params.get("model") : "tfidf") as ModelId;
   const lang = (["fr", "en"].includes(params.get("lang") ?? "") ? params.get("lang") : "auto") as QueryLang;
   const page = Number(params.get("page") ?? 1) || 1;
@@ -60,11 +60,15 @@ export default function Results({ params }: { params: URLSearchParams }) {
       {loading && !data && <div className="spinner" />}
       {stale && <div className="spinner spinner-inline" aria-hidden="true" />}
       {error && <EmptyState kind={error === "server_down" ? "server_down" : "error"} msg={error} />}
+      {data?.message === "no_match" && shown === "w2v" && (
+        <EmptyState kind="no_match_w2v" msg={data.threshold?.toFixed(2) ?? ""} hint={t("empty.no_match_w2v.hint")}
+          action={{ label: `→ ${t("model.tfidf")}`, onClick: () => go({ model: "tfidf", page: 1 }) }} />
+      )}
       {data?.message === "no_match" && shown !== "w2v" && (
         <EmptyState kind="no_match" hint={t("empty.no_match.hint")}
           action={{ label: `→ ${t("model.w2v")}`, onClick: () => go({ model: "w2v", page: 1 }) }} />
       )}
-      {data?.message && !(data.message === "no_match" && shown !== "w2v") && <EmptyState kind={data.message} />}
+      {data?.message && data.message !== "no_match" && <EmptyState kind={data.message} />}
       <div className={`list ${loading ? "is-loading" : ""}`}>
         {data?.results.map((r, i) => <ResultCard key={`${shown}-${r.id}`} result={r} model={shown} index={i}
           onOpen={(id) => go({ doc: id })} />)}

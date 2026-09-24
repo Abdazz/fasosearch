@@ -73,7 +73,7 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
       <aside className="dp" ref={panelRef} tabIndex={-1} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true"
         aria-labelledby={d ? titleId : undefined} aria-label={d ? undefined : t("common.loading")}>
         <button className="btn dp-close" onClick={onClose}>✕ {t("detail.close")}</button>
-        {err && <p className="dp-err">{err}</p>}
+        {err && <p className="dp-err">{err === "server_down" ? t("empty.server_down") : t("empty.error", { msg: err })}</p>}
         {!d && !err && <div className="spinner" />}
         {d && (<>
           <div className="label">{d.document.id}</div>
@@ -87,7 +87,12 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
           {!d.explanation && <p className="dp-muted">{t("detail.noQuery")}</p>}
           {d.explanation && (
             <div className="dp-why panel">
-              <ScoreRing value={d.explanation.score} ratio={1} model={explModel} size={96} />
+              <div className="dp-ring">
+                <ScoreRing value={d.explanation.score} ratio={1} model={explModel} size={96} />
+                {d.explanation.below_threshold && d.explanation.threshold !== null && (
+                  <p className="dp-below">{t("detail.belowThreshold", { t: d.explanation.threshold.toFixed(2) })}</p>
+                )}
+              </div>
               <div className="dp-bars">
                 {explModel === "w2v" && <p className="dp-muted">{t("detail.w2vExplain")}</p>}
                 {d.explanation.contributions.map((c) => (
@@ -137,6 +142,8 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
         .dp-h{font:700 16px var(--font-display);margin-top:10px}
         .dp-muted{color:var(--ink-3);font-size:14px}
         .dp-why{display:flex;gap:20px;align-items:center;padding:18px}
+        .dp-ring{display:flex;flex-direction:column;align-items:center;gap:8px;flex:none}
+        .dp-below{color:var(--ink-3);font-size:11.5px;text-align:center;max-width:120px;line-height:1.3}
         .dp-bars{flex:1;display:flex;flex-direction:column;gap:9px}
         .dp-bar{display:grid;grid-template-columns:110px 1fr 54px;gap:10px;align-items:center;font-size:13px}
         .track{height:8px;border-radius:6px;background:var(--ring-track);overflow:hidden}

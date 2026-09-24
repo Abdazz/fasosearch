@@ -26,7 +26,8 @@ export interface CompareResponse { query: QueryInfo; models: Record<ModelId, Com
 export interface Neighbor { word: string; similarity: number }
 export interface DocumentResponse {
   document: { id: string; title: string; authors: string; university: string; year: number | null; url: string | null; abstract: Segment[] };
-  explanation: { model: ModelId; score: number; contributions: Contribution[] } | null;
+  explanation: { model: ModelId; score: number; below_threshold: boolean; threshold: number | null;
+                 contributions: Contribution[] } | null;
   neighbors: Record<string, Neighbor[]>;
   similar: { id: string; title: string; university: string; year: number | null; similarity: number }[];
 }
