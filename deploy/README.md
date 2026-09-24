@@ -1,5 +1,7 @@
 # Mise en service du déploiement continu (une seule fois)
 
+Dans les commandes, remplacer `<IP_DU_VPS>` par l'adresse IP du serveur et `<compte_admin>` par le compte d'administration qui dispose de `sudo`.
+
 À exécuter dans l'ordre. Les commandes marquées **[sudo]** demandent le mot de passe du compte `<compte_admin>` sur le VPS (le compte `<compte_admin>` doit avoir un mot de passe pour pouvoir utiliser `sudo`, à définir avec `passwd` si besoin).
 Rien de ce qui existe déjà sur le serveur (vhosts, conteneurs, ports) n'est modifié. Le VPS héberge d'autres applications en production : toutes les étapes ci-dessous se limitent à FasoSearch.
 
