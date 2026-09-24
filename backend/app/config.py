@@ -20,16 +20,19 @@ AFFILIATIONS_TODO = DATA_DIR / "affiliations_a_verifier.txt"
 OPENALEX_CACHE_DIR = DATA_DIR / "openalex_cache"
 EXCLUSIONS = DATA_DIR / "exclusions.txt"
 
-# Word2Vec (skip-gram) — seed + 1 worker => entraînement reproductible
+# Word2Vec (skip-gram), seed + 1 worker => entraînement reproductible
 # min_count=5 (task 17b) : élimine les mots rares parasites (ex. "sorobouly", "liido") des
 # voisins, maintenant que le corpus d'entraînement est plus large (+ data/w2v_cs.txt).
 W2V_PARAMS = dict(vector_size=100, window=5, min_count=5, epochs=30, seed=42, sg=1, workers=1)
-# Seuil réglé via scripts/smoke_demo.py (task 18) : à 0.40, les requêtes de démo renvoyaient
-# quasiment tout le corpus (jusqu'à 90/90 documents) car les vecteurs moyens (IDF) de ce
-# vocabulaire restent globalement proches. Relevé par pas de 0.05 jusqu'à ce qu'au plus 2
-# requêtes de démo significatives sortent de l'intervalle [3, 40] documents : 0.60 -> 1 seule
-# requête hors intervalle (« Internet exchange points in Africa », 46), voir README.
-W2V_THRESHOLD = 0.60
+# Seuil réglé via scripts/smoke_demo.py (task 18, puis réajusté à la vague de correctifs
+# finale après le fix I3 du prétraitement, qui a changé le vocabulaire indexé et donc
+# légèrement déplacé tous les vecteurs moyens) : relevé par pas de 0.05 depuis 0.40 jusqu'à
+# ce qu'au plus 2 requêtes de démo significatives sortent de l'intervalle [3, 40] documents,
+# puis affiné par pas de 0.01 autour du meilleur palier de 0.05 pour rester au plus proche du
+# centre de l'intervalle sans casser la démonstration ("malware" doit encore trouver
+# Document_54, qui ne contient jamais le mot mais est proche par le sens). 0.58 -> 1 seule
+# requête hors intervalle (« Internet exchange points in Africa », 58), voir README.
+W2V_THRESHOLD = 0.58
 
 # BM25 (bonus TP 3)
 BM25_K1 = 1.5

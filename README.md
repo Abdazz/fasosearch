@@ -136,7 +136,7 @@ Vocabulaire final (`min_count=5`) : environ 30 000 mots.
 | Requête prétraitée | bloc « Requête -> Traduction -> Prétraitée » de chaque recherche |
 | Affichage des scores | anneaux de score, « Pourquoi ce score ? », page **Comparer** |
 | Français / Anglais | `backend/app/language.py` (détection + traduction hors ligne) |
-| Word2Vec & Cosinus | `backend/app/word2vec.py` (seuil cosinus retenu : 0.60) |
+| Word2Vec & Cosinus | `backend/app/word2vec.py` (seuil cosinus retenu : 0.58) |
 | TF-IDF & Cosinus | `backend/app/tfidf.py` (TF = tf / max tf, IDF = log N/df) |
 | Bonus BM25 (TP 3) | `backend/app/bm25.py` |
 
@@ -146,10 +146,12 @@ Vocabulaire final (`min_count=5`) : environ 30 000 mots.
 celles dont le nombre de résultats Word2Vec sort de l'intervalle [3, 40]. Au seuil initial de
 la spec (0.40), la quasi-totalité du corpus dépassait ce seuil de similarité pour presque
 toutes les requêtes (jusqu'à 90/90 documents) : les vecteurs moyens pondérés par IDF restent
-globalement proches sur ce vocabulaire. Relevé par pas de 0.05, le seuil **0.60** ramène le
-nombre de requêtes hors intervalle à 1 sur 8 requêtes significatives (seule
-`Internet exchange points in Africa` dépasse légèrement, avec 46 documents), ce qui respecte
-la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 0.60`.
+globalement proches sur ce vocabulaire. Relevé par pas de 0.05, puis affiné par pas de 0.01 (le
+prétraitement corrigé lors de la vague de correctifs finale, voir `PREPROCESS_VERSION`, a
+légèrement déplacé tous les vecteurs moyens), le seuil **0.58** ramène le nombre de requêtes
+hors intervalle à 1 sur 8 requêtes significatives (seule
+`Internet exchange points in Africa` dépasse largement, avec 58 documents), ce qui respecte
+la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 0.58`.
 
 ## Requêtes de démonstration
 
@@ -166,7 +168,7 @@ la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 
 | `apprentissage automatique pour la santé` | traduction FR -> EN neuronale (« machine learning for health ») |
 | `Internet exchange points in Africa` | comparaison des scores TF-IDF / Word2Vec / BM25 (page **Comparer**) |
 | `ontologie pour l'agriculture` | traduction FR -> EN (« ontology for agriculture ») |
-| `malware` (Word2Vec) | Word2Vec trouve 3 documents (dont un que TF-IDF ne trouve pas du tout : `Document_54`, « Detecting Illicit Data Leaks on Android Smartphones... », qui ne contient jamais le mot « malware » mais dont le vecteur moyen est proche par le sens) |
+| `malware` (Word2Vec) | Word2Vec trouve 5 documents, dont 3 que TF-IDF ne trouve pas du tout (`Document_03`, `Document_51`, `Document_54` : « Detecting Illicit Data Leaks on Android Smartphones... », qui ne contient jamais le mot « malware » mais dont le vecteur moyen est proche par le sens) |
 | `security of government websites` | comparaison BM25 vs TF-IDF (même classement, échelles de score différentes) |
 | `deep learning image counting` | Word2Vec & cosinus, requête multi-termes |
 | `the of and` | requête entièrement composée de mots vides : aucun terme après prétraitement |
