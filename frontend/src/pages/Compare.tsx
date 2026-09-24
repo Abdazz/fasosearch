@@ -33,8 +33,11 @@ export default function Compare({ params }: { params: URLSearchParams }) {
   const open = (m: ModelId, id: string) => navigate("search", { q, model: m, lang: lang === "auto" ? undefined : lang, doc: id });
 
   const tfidfRank = new Map<string, number>(data?.models.tfidf.map((r) => [r.id, r.rank] as [string, number]));
+  // tops ne retient que les modèles ayant renvoyé au moins un résultat (top-1 défini) :
+  // l'accord se mesure sur ces modèles-là, jamais sur un dénominateur fixe de 3.
   const tops = data ? MODELS.map((m) => data.models[m][0]?.id).filter(Boolean) : [];
-  const agreement = tops.length ? Math.max(...tops.map((id) => tops.filter((x) => x === id).length)) : 0;
+  const respondedCount = tops.length;
+  const agreement = respondedCount ? Math.max(...tops.map((id) => tops.filter((x) => x === id).length)) : 0;
 
   return (
     <section className="cmp">
@@ -51,7 +54,9 @@ export default function Compare({ params }: { params: URLSearchParams }) {
       {err && <EmptyState kind={err === "server_down" ? "server_down" : "error"} msg={err} />}
       {loading && !data && <div className="spinner" />}
       {data && (<>
-        <div className="cmp-agree label">{t("compare.agreement", { n: agreement })}</div>
+        {respondedCount >= 2 && (
+          <div className="cmp-agree label">{t("compare.agreement", { n: agreement, m: respondedCount })}</div>
+        )}
         <div className={`cmp-grid ${loading ? "is-loading" : ""}`}>
           {MODELS.map((m, ci) => (
             <div key={m} className="cmp-col panel fade-up" style={{ animationDelay: `${ci * 0.08}s` }}>
@@ -112,7 +117,7 @@ export default function Compare({ params }: { params: URLSearchParams }) {
         .cmp-title .uni{font-size:11px;padding:2px 8px 2px 2px}
         .cmp-title .uni i{min-width:18px;height:16px;font-size:8px}
         .cmp-score{font:600 12.5px var(--font-mono);display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-        .cmp-score em{font-style:normal;font-size:11px;font-weight:700}
+        .cmp-score em{font-style:normal;font-size:12.5px;font-weight:700}
         .up{color:var(--accent-2)}.down{color:var(--danger)}
         .dot{width:9px;height:9px;border-radius:50%;flex:none}
         @media (max-width:900px){.cmp-grid{grid-template-columns:1fr}}
