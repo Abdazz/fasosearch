@@ -38,4 +38,4 @@ def test_everything_is_english(docs):
 def test_no_field_contains_em_or_en_dash(docs):
     for d in docs:
         for value in (d.title, d.abstract, d.authors, d.university):
-            assert "—" not in value and "–" not in value
+            assert "\u2014" not in value and "\u2013" not in value

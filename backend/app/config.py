@@ -1,13 +1,11 @@
 """Configuration centrale : chemins et constantes du SRI (valeurs issues de la spec)."""
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]          # .../Devoir/sri
-DEVOIR = ROOT.parent                                 # .../Devoir
-
-ORIGINAL_EXCEL = DEVOIR / "données textuelles.xlsx"
-CORPUS_EXCEL = DEVOIR / "données textuelles - base complète.xlsx"
-
+ROOT = Path(__file__).resolve().parents[2]          # racine du depot (sri/ en local)
 DATA_DIR = ROOT / "data"
+
+ORIGINAL_EXCEL = DATA_DIR / "original" / "donnees_textuelles.xlsx"   # copie en lecture seule
+CORPUS_EXCEL = DATA_DIR / "base_complete.xlsx"                      # source unique du moteur
 MODELS_DIR = ROOT / "models"
 STATIC_DIR = ROOT / "backend" / "static"
 NLTK_DIR = ROOT / "nltk_data"

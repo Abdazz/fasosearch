@@ -4,6 +4,7 @@ Usage : python scripts/build_index.py
 L'index inversé, TF-IDF et BM25 sont recalculés en mémoire au démarrage (rapide) ;
 seul l'entraînement de Word2Vec (≈ 1-2 min) est mis en cache dans models/.
 """
+import hashlib
 import json
 import sys
 import time
@@ -18,18 +19,30 @@ from backend.app.word2vec import train_word2vec  # noqa: E402
 DOC_TERMS = config.MODELS_DIR / "doc_terms.json"
 W2V_FILE = config.MODELS_DIR / "w2v.kv"
 FINGERPRINT = config.MODELS_DIR / "fingerprint.txt"
+# Code qui construit Document.text (entrée du prétraitement) : le modifier change l'index.
+CORPUS_CODE = config.ROOT / "backend" / "app" / "corpus.py"
 
 
 def fingerprint(path: Path) -> str:
+    """Empreinte du CONTENU (SHA-256) : identique d'un clone a l'autre, quelle que soit la date."""
     if not path.exists():
         return "absent"
-    st = path.stat()
-    return f"{st.st_size}-{st.st_mtime_ns}"
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def index_cache_key() -> str:
+    """Cle courte pour le cache de l'index en CI (derivee de _current())."""
+    return hashlib.sha256(_current().encode("utf-8")).hexdigest()[:32]
 
 
 def _current() -> str:
     return (f"{fingerprint(config.CORPUS_EXCEL)}|{fingerprint(config.W2V_EXTRA)}|"
-            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}|preprocess={PREPROCESS_VERSION}")
+            f"{fingerprint(config.W2V_CS)}|{config.W2V_PARAMS}|preprocess={PREPROCESS_VERSION}|"
+            f"corpus_code={fingerprint(CORPUS_CODE)}")
 
 
 def _read_extra_lines(path: Path) -> list[str]:

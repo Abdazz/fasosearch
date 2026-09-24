@@ -1,0 +1,12 @@
+.git
+.github
+.superpowers
+.playwright-mcp
+.pytest_cache
+**/__pycache__
+docs
+tests
+frontend/node_modules
+frontend/dist
+backend/static
+data/openalex_cache

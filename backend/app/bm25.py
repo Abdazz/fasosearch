@@ -1,4 +1,4 @@
-"""BM25 (modèle probabiliste, bonus TP 3) — comparaison avec TF-IDF.
+"""BM25 (modèle probabiliste, bonus TP 3): comparaison avec TF-IDF.
 
 score(q,d) = Σ_t IDF(t) · tf·(k1+1) / (tf + k1·(1 − b + b·|d|/avgdl))
 IDF(t)     = log((N − df + 0.5)/(df + 0.5) + 1)

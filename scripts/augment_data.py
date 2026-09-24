@@ -1,4 +1,4 @@
-"""Augmentation des données — articles d'informatique d'auteurs burkinabè (OpenAlex).
+"""Augmentation des données: articles d'informatique d'auteurs burkinabè (OpenAlex).
 
 Critères (spec §2.1) : ≥1 auteur affilié au Burkina Faso, domaine Computer Science,
 anglais (filtre OpenAlex + langdetect), résumé de 60 à 450 mots, pas de doublon.
@@ -19,7 +19,7 @@ est levée immédiatement (les autres erreurs réseau gardent 3 nouvelles tentat
 l'attrape et s'arrête sans écrire de fichier de sortie partiel.
 
 Produit :
-  Devoir/données textuelles - base complète.xlsx   (30 originaux + nouveaux)
+  data/base_complete.xlsx   (30 originaux + nouveaux)
   data/w2v_extra.txt        résumés BF non indexés (entraînement Word2Vec uniquement)
   data/doi.json             id -> lien DOI/OpenAlex
   data/affiliations_a_verifier.txt   originaux dont l'affiliation n'a pas été trouvée
@@ -150,7 +150,7 @@ def next_ids(start: int, count: int) -> list[str]:
 
 def _strong_terms_in(text: str) -> set[str]:
     # \bterm\b est délibérément insensible au pluriel (ex. "algorithm" ne matche pas
-    # "algorithms") : décision du contrôleur — cela rend le filtre plus strict (moins de
+    # "algorithms") : décision du contrôleur - cela rend le filtre plus strict (moins de
     # faux positifs), donc ce comportement est conservé tel quel, ne pas le "corriger".
     low = (text or "").lower()
     return {term for term in STRONG_LEXICON if re.search(r"\b" + re.escape(term) + r"\b", low)}

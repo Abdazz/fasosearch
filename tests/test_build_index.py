@@ -1,5 +1,67 @@
+import os
+from pathlib import Path
+
 from scripts import build_index
 from backend.app.preprocess import PREPROCESS_VERSION
+
+
+def test_fingerprint_depends_on_content_not_mtime(tmp_path):
+    a, b = tmp_path / "a.txt", tmp_path / "b.txt"
+    a.write_text("même contenu")
+    b.write_text("même contenu")
+    os.utime(a, (1_000_000_000, 1_000_000_000))
+    os.utime(b, (2_000_000_000, 2_000_000_000))
+    assert build_index.fingerprint(a) == build_index.fingerprint(b)
+    assert len(build_index.fingerprint(a)) == 64
+
+
+def test_index_cache_key_is_stable_and_content_based(tmp_path, monkeypatch):
+    corpus = tmp_path / "corpus.xlsx"
+    corpus.write_bytes(b"v1")
+    monkeypatch.setattr(build_index.config, "CORPUS_EXCEL", corpus)
+    monkeypatch.setattr(build_index.config, "W2V_EXTRA", tmp_path / "extra.txt")
+    monkeypatch.setattr(build_index.config, "W2V_CS", tmp_path / "cs.txt")
+    k1 = build_index.index_cache_key()
+    os.utime(corpus, (1_500_000_000, 1_500_000_000))
+    assert build_index.index_cache_key() == k1
+    corpus.write_bytes(b"v2")
+    assert build_index.index_cache_key() != k1
+    assert len(k1) == 32
+
+
+def test_index_cache_key_depends_on_corpus_code(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_index.config, "CORPUS_EXCEL", tmp_path / "corpus.xlsx")
+    monkeypatch.setattr(build_index.config, "W2V_EXTRA", tmp_path / "extra.txt")
+    monkeypatch.setattr(build_index.config, "W2V_CS", tmp_path / "cs.txt")
+    code = tmp_path / "corpus.py"
+    code.write_text("v1")
+    monkeypatch.setattr(build_index, "CORPUS_CODE", code)
+    k1 = build_index.index_cache_key()
+    assert build_index.index_cache_key() == k1          # déterministe
+    code.write_text("v2")
+    assert build_index.index_cache_key() != k1
+
+
+def test_corpus_code_points_to_real_module():
+    from backend.app import corpus
+    assert build_index.CORPUS_CODE.resolve() == Path(corpus.__file__).resolve()
+
+
+def test_restored_index_is_not_stale_after_touch(tmp_path, monkeypatch):
+    corpus = tmp_path / "corpus.xlsx"
+    corpus.write_bytes(b"data")
+    monkeypatch.setattr(build_index.config, "CORPUS_EXCEL", corpus)
+    monkeypatch.setattr(build_index.config, "W2V_EXTRA", tmp_path / "extra.txt")
+    monkeypatch.setattr(build_index.config, "W2V_CS", tmp_path / "cs.txt")
+    for name in ("DOC_TERMS", "W2V_FILE"):
+        p = tmp_path / name
+        p.write_text("x")
+        monkeypatch.setattr(build_index, name, p)
+    fp = tmp_path / "fingerprint.txt"
+    fp.write_text(build_index._current())
+    monkeypatch.setattr(build_index, "FINGERPRINT", fp)
+    os.utime(corpus, (2_100_000_000, 2_100_000_000))   # simule un nouveau clone
+    assert build_index.is_stale() is False
 
 
 def test_fingerprint_changes_with_file(tmp_path):
@@ -63,4 +125,4 @@ def test_build_warns_loudly_when_extra_training_corpora_missing(tmp_path, monkey
 
     out = capsys.readouterr().out
     assert "ATTENTION" in out and "w2v_extra.txt" in out and "w2v_cs.txt" in out
-    assert "—" not in out and "–" not in out
+    assert "\u2014" not in out and "\u2013" not in out

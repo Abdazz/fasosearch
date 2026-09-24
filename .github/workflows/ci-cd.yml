@@ -1,0 +1,185 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Étiquette d'image existante à redéployer (SHA complet, 40 caractères hexadécimaux). Laisser vide pour construire le commit courant."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# Une seule exécution à la fois par branche : sur main, deux push rapprochés ne peuvent
+# plus publier ni déployer dans le désordre (la plus récente passe toujours en dernier).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/abdazz/fasosearch
+  APP_URL: https://fasosearch.golden-technologies.com
+
+jobs:
+  test:
+    if: github.event_name != 'workflow_dispatch' || inputs.image_tag == ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Cache des ressources hors ligne
+        uses: actions/cache@v4
+        with:
+          path: |
+            nltk_data
+            lang_models
+          key: resources-${{ hashFiles('backend/app/config.py', 'scripts/setup_resources.py') }}
+      - run: pip install -r requirements.txt
+      - run: python scripts/setup_resources.py
+      - name: Tests Python (unitaires)
+        run: python -m pytest -q -m "not integration"
+      - name: Tests de l'interface
+        working-directory: frontend
+        run: npm ci && npm test
+
+  build:
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Cache des ressources hors ligne
+        uses: actions/cache@v4
+        with:
+          path: |
+            nltk_data
+            lang_models
+          key: resources-${{ hashFiles('backend/app/config.py', 'scripts/setup_resources.py') }}
+      - run: pip install -r requirements.txt
+      - run: python scripts/setup_resources.py
+      - run: python scripts/prune_nltk.py
+      - name: Clé de cache de l'index
+        id: idx
+        run: |
+          KEY=$(python -c "from scripts.build_index import index_cache_key; print(index_cache_key())")
+          echo "key=index-$KEY-${{ hashFiles('backend/app/corpus.py', 'backend/app/preprocess.py', 'backend/app/word2vec.py', 'scripts/build_index.py', 'requirements-prod.txt') }}" >> "$GITHUB_OUTPUT"
+      - name: Cache de l'index
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: ${{ steps.idx.outputs.key }}
+      - name: Construire l'index si nécessaire
+        run: python -c "from scripts.build_index import is_stale, build; build() if is_stale() else print('Index à jour (cache)')"
+      - name: Tests d'intégration sur l'index construit
+        run: python -m pytest -q -m integration
+      - uses: docker/setup-buildx-action@v3
+      - name: Construire l'image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Test de fumée de l'image
+        run: bash scripts/smoke_image.sh "${{ env.IMAGE }}:${{ github.sha }}"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publier l'image
+        run: |
+          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"
+          docker push "$IMAGE:latest"
+
+  deploy:
+    needs: build
+    if: >-
+      !cancelled() && github.ref == 'refs/heads/main' &&
+      (needs.build.result == 'success' ||
+       (github.event_name == 'workflow_dispatch' && inputs.image_tag != ''))
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    # En plus de la concurrence du workflow (par branche) : jamais deux déploiements
+    # simultanés sur le VPS, quel que soit le déclencheur.
+    concurrency:
+      group: fasosearch-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      packages: read
+    env:
+      TAG: ${{ github.event.inputs.image_tag || github.sha }}
+      TARGET: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+      SSH_OPTS: -o ConnectTimeout=15 -o ServerAliveInterval=15 -o StrictHostKeyChecking=yes
+    steps:
+      - name: Valider l'étiquette de l'image
+        run: |
+          [[ "$TAG" =~ ^[0-9a-f]{40}$|^latest$ ]] || { echo "Étiquette d'image invalide : $TAG"; exit 1; }
+      - uses: actions/checkout@v4
+      - name: Clé SSH et hôte connu
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Copier la configuration de déploiement
+        run: |
+          # shellcheck disable=SC2086
+          scp $SSH_OPTS deploy/docker-compose.prod.yml deploy/remote-deploy.sh "$TARGET:/opt/fasosearch/"
+      - name: Déployer
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # shellcheck disable=SC2086
+          printf '%s' "$GHCR_TOKEN" | ssh $SSH_OPTS "$TARGET" "docker login ghcr.io -u '${{ github.actor }}' --password-stdin"
+          set +e
+          # shellcheck disable=SC2029,SC2086
+          ssh $SSH_OPTS "$TARGET" "bash /opt/fasosearch/remote-deploy.sh deploy '$TAG'"
+          rc=$?
+          # shellcheck disable=SC2086
+          ssh $SSH_OPTS "$TARGET" "docker logout ghcr.io" || true
+          exit $rc
+      - name: Vérification externe
+        id: verify
+        run: |
+          for _ in 1 2 3 4 5; do
+            body=$(curl -fsS --max-time 10 "$APP_URL/api/health") || body=""
+            echo "$body"
+            if [[ "$body" == *'"documents"'* ]]; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Retour arrière
+        if: failure() && steps.verify.outcome == 'failure'
+        run: |
+          # shellcheck disable=SC2086
+          ssh $SSH_OPTS "$TARGET" "bash /opt/fasosearch/remote-deploy.sh rollback"
