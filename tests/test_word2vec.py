@@ -48,3 +48,29 @@ def test_neighbors_and_similar_documents(model):
     assert model.neighbors("zzzz") == []
     assert len(model.neighbors("intrusion", k=3)) == 3
     assert model.similar_documents(0, k=1)[0][0] == 1
+
+
+def test_idf_weighting_pulls_text_vector_toward_the_rarer_word(model):
+    # T7 (round 1) : les tests précédents ne montraient pas que la pondération IDF change
+    # réellement le vecteur moyen, seulement que le calcul ne plante pas. Ici "cattle" (idf
+    # 10.0) domine largement "intrusion" (idf 0.01) dans la moyenne pondérée : le vecteur de
+    # texte doit donc être quasi colinéaire à "cattle" seul, bien plus qu'avec une moyenne
+    # simple (non pondérée, idf implicite = 1.0 partout via `default_idf`).
+    a, b = "intrusion", "cattle"
+    weighted = Word2VecModel(model.kv, [[a, b]], idf={a: 0.01, b: 10.0})
+    plain = Word2VecModel(model.kv, [[a, b]], idf={})
+    v_weighted, _ = weighted.text_vector([a, b])
+    v_plain, _ = plain.text_vector([a, b])
+    kv_b_unit = model.kv[b] / np.linalg.norm(model.kv[b])
+
+    cos_weighted = float(v_weighted @ kv_b_unit)
+    cos_plain = float(v_plain @ kv_b_unit)
+    assert cos_weighted > 0.99
+    assert cos_weighted > cos_plain
+
+
+def test_idf_weighting_flips_document_ranking(model):
+    a, b = "intrusion", "cattle"
+    m = Word2VecModel(model.kv, [[a], [b]], idf={a: 0.01, b: 10.0})
+    ranked, _ = m.score([a, b], threshold=-1.0)
+    assert ranked[0][0] == 1
