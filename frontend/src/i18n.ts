@@ -43,11 +43,14 @@ const fr: Dict = {
   "lab.neighbors.input": "Un mot anglais (ex. intrusion)", "lab.neighbors.unknown": "« {w} » n'est pas dans le vocabulaire.",
   "lab.map": "Carte sémantique du corpus", "lab.map.subtitle": "Chaque point est un article, placé selon son vecteur Word2Vec (ACP). Les articles proches parlent de sujets proches.",
   "lab.removed.punctuation": "ponctuation", "lab.removed.number": "nombre", "lab.removed.stopword": "mot vide",
+  "lab.termsLabel": "→ termes", "lab.sample": "The authors propose a lightweight intrusion detection system for wireless sensor networks in Burkina Faso, 2024.",
+  "lab.changedFrom": "changé depuis {w}",
   "corpus.title": "Le corpus", "corpus.subtitle": "{n} articles scientifiques en anglais, d'auteurs affiliés à des institutions du Burkina Faso.",
   "corpus.filter": "Filtrer par titre ou auteur…", "corpus.allUnis": "Toutes les universités", "corpus.allYears": "Toutes les années",
   "corpus.byUni": "Articles par université", "corpus.byYear": "Articles par année",
   "corpus.col.id": "ID", "corpus.col.title": "Titre", "corpus.col.authors": "Auteurs", "corpus.col.uni": "Université", "corpus.col.year": "Année",
-  "common.loading": "Chargement…",
+  "corpus.row.open": "Ouvrir le document {id}",
+  "common.loading": "Chargement…", "common.uniUnknown": "Université non renseignée", "common.error": "Une erreur est survenue.",
 };
 
 const en: Dict = {
@@ -91,11 +94,14 @@ const en: Dict = {
   "lab.neighbors.input": "An English word (e.g. intrusion)", "lab.neighbors.unknown": "“{w}” is not in the vocabulary.",
   "lab.map": "Semantic map of the corpus", "lab.map.subtitle": "Each dot is an article, placed by its Word2Vec vector (PCA). Nearby articles discuss related topics.",
   "lab.removed.punctuation": "punctuation", "lab.removed.number": "number", "lab.removed.stopword": "stopword",
+  "lab.termsLabel": "→ terms", "lab.sample": "The authors propose a lightweight intrusion detection system for wireless sensor networks in Burkina Faso, 2024.",
+  "lab.changedFrom": "changed from {w}",
   "corpus.title": "The corpus", "corpus.subtitle": "{n} English research articles by authors affiliated with Burkina Faso institutions.",
   "corpus.filter": "Filter by title or author…", "corpus.allUnis": "All universities", "corpus.allYears": "All years",
   "corpus.byUni": "Articles per university", "corpus.byYear": "Articles per year",
   "corpus.col.id": "ID", "corpus.col.title": "Title", "corpus.col.authors": "Authors", "corpus.col.uni": "University", "corpus.col.year": "Year",
-  "common.loading": "Loading…",
+  "corpus.row.open": "Open document {id}",
+  "common.loading": "Loading…", "common.uniUnknown": "University not provided", "common.error": "Something went wrong.",
 };
 
 export const DICT: Record<Lang, Dict> = { fr, en };

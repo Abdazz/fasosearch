@@ -27,3 +27,15 @@ mark { background: var(--mark); color: var(--mark-ink); padding: 1px 4px; border
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
 }
 @media (max-width: 760px) { .wrap { padding: 0 16px 56px; } }
+
+/* Helpers partagés entre les pages Lab et Corpus (évite la duplication de style inline). */
+.lab-h { font-size: clamp(32px, 4.5vw, 52px); }
+.lab-sub { color: var(--ink-2); font-size: 16px; }
+.lab-block { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--card-shadow); }
+.lab-input { width: 100%; background: var(--surface-2); border: var(--border-w) solid var(--line); border-radius: 14px; padding: 12px 14px; color: var(--ink); font: 500 15px var(--font-body); }
+.lab-h3 { font: 700 16px var(--font-display); margin-top: 0; }
+.lab-muted { color: var(--ink-3); font-size: 14px; }
+.mono { font-family: var(--font-mono); }
+.track { height: 8px; border-radius: 6px; background: var(--ring-track); overflow: hidden; }
+.fill { height: 100%; border-radius: 6px; background: var(--grad); animation: grow .9s var(--ease-out) both; transform-origin: left; }
+@keyframes grow { from { transform: scaleX(0); } }
