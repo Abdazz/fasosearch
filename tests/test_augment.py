@@ -1,13 +1,16 @@
 import json
 
+import openpyxl
 import pytest
 import requests
 
 from backend.app import config
+from backend.app.corpus import COLUMNS
 from scripts.augment_data import (CS_LEXICON, PER_SUBFIELD, SEARCH_RETRY_MAX_WAIT,
                                   STRONG_LEXICON, WEAK_LEXICON, QuotaExceeded, bf_institutions,
                                   clean, is_computer_science, is_excluded, load_exclusions,
                                   next_ids, norm_title, rebuild_abstract, select_diverse,
+                                  write_excel,
                                   _get, _search_paced, _significant_words)
 
 
@@ -229,6 +232,21 @@ def test_search_paced_retries_once_on_short_429_then_succeeds(cache_dir, monkeyp
     data = _search_paced({"search": "some title", "per-page": 5})
     assert data == {"results": [{"title": "ok"}]}
     assert len(calls) == 2  # 1 essai (429) + 1 retentative (succès)
+
+
+def test_write_excel_header_has_url_and_widths_cover_column_g(tmp_path):
+    # COLUMNS compte 7 noms (dont URL) alors que les lignes écrites par _run() n'en ont que 6
+    # (ce script ne connaît pas la page éditeur) : la colonne URL doit rester vide, mais
+    # l'en-tête et la largeur de colonne (G) doivent quand même la couvrir, pour que
+    # scripts/add_urls.py la retrouve et la remplisse ensuite.
+    path = tmp_path / "out.xlsx"
+    write_excel([["Document_01", "Titre", "Résumé", "Auteur", 2020, "Université X"]], path)
+
+    ws = openpyxl.load_workbook(path).active
+    assert [c.value for c in ws[1]] == COLUMNS == [
+        "ID_document", "Title", "Abstract", "Authors", "Year", "University", "URL"]
+    assert ws.column_dimensions["G"].width == 60
+    assert ws.cell(row=2, column=7).value is None  # URL laissée vide par ce script
 
 
 def test_search_paced_gives_up_cleanly_on_long_429(cache_dir, monkeypatch):

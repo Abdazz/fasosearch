@@ -89,6 +89,18 @@ def test_write_url_column_is_idempotent(tmp_path):
     assert rows[1][6] == "https://b.org/2" and rows[2][6] == "https://c.org/3"
 
 
+def test_write_url_column_keeps_previous_url_when_new_value_is_empty(tmp_path):
+    p = tmp_path / "b.xlsx"
+    _book(p)
+    write_url_column(p, {"Document_01": "https://a.org/1"})
+    # Relance avec une valeur absente puis une valeur vide pour Document_01 : la cellule
+    # existante ne doit pas être effacée. Document_02 reste sans URL (jamais eu de valeur).
+    write_url_column(p, {"Document_02": ""})
+    rows = _rows(p)
+    assert rows[1][6] == "https://a.org/1"
+    assert rows[2][6] in (None, "")
+
+
 def test_main_does_not_write_on_quota(tmp_path, monkeypatch):
     p = tmp_path / "b.xlsx"
     _book(p)

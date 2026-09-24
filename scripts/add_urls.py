@@ -81,7 +81,11 @@ def write_url_column(path: Path, urls: dict[str, str]) -> None:
     for row in range(2, ws.max_row + 1):
         doc_id = ws.cell(row=row, column=id_col).value
         if doc_id:
-            ws.cell(row=row, column=col, value=urls.get(str(doc_id).strip()) or None)
+            new_url = urls.get(str(doc_id).strip())
+            # Une URL déjà présente n'est jamais effacée par une relance : on n'écrase la
+            # cellule que si la nouvelle valeur est non vide, sinon on garde l'existante.
+            if new_url:
+                ws.cell(row=row, column=col, value=new_url)
     wb.save(path)
 
 

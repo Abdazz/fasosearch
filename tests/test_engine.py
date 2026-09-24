@@ -101,6 +101,42 @@ def test_document_url_comes_from_document(engine):
     assert engine.document("Document_02")["document"]["url"] is None
 
 
+def test_corpus_url_matches_document_rule(engine):
+    # corpus() doit appliquer la même règle que document() : URL vide -> None (fix I4).
+    urls = {d["id"]: d["url"] for d in engine.corpus()["documents"]}
+    assert urls["Document_01"] == "https://doi.org/x"
+    assert urls["Document_02"] is None
+
+
+NON_HTTPS_DOCS = [
+    Document("Document_01", "Network intrusion detection",
+             "Intrusion detection systems detect attacks on networks.", "A. B", 2023,
+             "Université Norbert Zongo", "javascript:alert(1)"),
+    Document("Document_02", "Cattle breed recognition",
+             "Machine learning classifies cattle breeds from morphology.", "C. D", 2022,
+             "Université Nazi Boni", "http://x"),
+]
+
+
+@pytest.fixture(scope="module")
+def unsafe_url_engine():
+    terms = [analyze(d.text) for d in NON_HTTPS_DOCS]
+    kv = train_word2vec(terms, {**config.W2V_PARAMS, "vector_size": 8, "min_count": 1, "epochs": 5})
+    return SearchEngine(NON_HTTPS_DOCS, terms, kv)
+
+
+def test_document_url_rejects_non_https_schemes(unsafe_url_engine):
+    # javascript: et http:// (non chiffré) ne doivent jamais être servis comme URL "Source".
+    assert unsafe_url_engine.document("Document_01")["document"]["url"] is None
+    assert unsafe_url_engine.document("Document_02")["document"]["url"] is None
+
+
+def test_corpus_url_rejects_non_https_schemes(unsafe_url_engine):
+    urls = {d["id"]: d["url"] for d in unsafe_url_engine.corpus()["documents"]}
+    assert urls["Document_01"] is None
+    assert urls["Document_02"] is None
+
+
 def test_stats_corpus_map(engine):
     s = engine.stats()
     assert s["documents"] == 3 and s["universities"] == 3

@@ -352,7 +352,10 @@ def write_excel(rows: list[list], path: Path) -> None:
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF")
         cell.fill = PatternFill("solid", fgColor="231710")
-    for letter, width in zip("ABCDEF", (15, 60, 100, 45, 8, 40)):
+    # Colonne URL (G) volontairement laissée vide ici : ce script ne connaît pas la page
+    # éditeur de l'article. Il faut lancer scripts/add_urls.py ensuite (accès réseau) pour
+    # la remplir.
+    for letter, width in zip("ABCDEFG", (15, 60, 100, 45, 8, 40, 60)):
         ws.column_dimensions[letter].width = width
     for row in ws.iter_rows(min_row=2):
         for cell in row:

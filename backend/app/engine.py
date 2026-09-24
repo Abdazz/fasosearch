@@ -61,6 +61,12 @@ def make_snippet(text: str, terms: set[str], max_chars: int = 320) -> list[dict]
     return highlight(prefix + snippet + suffix, terms)
 
 
+def _public_url(url: str | None) -> str | None:
+    """URL affichable via le bouton "Source" : seulement une page en https, jamais vide et
+    jamais un schéma risqué (javascript:, http: non chiffré...)."""
+    return url if url and url.startswith("https://") else None
+
+
 def _check_alignment(ids_stored: list[str], ids_docs: list[str]) -> None:
     """Vérifie que l'index en cache (doc_terms.json) correspond au corpus actuel.
 
@@ -184,7 +190,7 @@ class SearchEngine:
                            "threshold": config.W2V_THRESHOLD if model == "w2v" else None,
                            "contributions": self._contributions(model, terms, d)}
         return {
-            "document": {**doc.to_dict(), "url": doc.url or None,
+            "document": {**doc.to_dict(), "url": _public_url(doc.url),
                          "abstract": highlight(doc.abstract, set(terms))},
             "explanation": explanation,
             "neighbors": {t: [{"word": w, "similarity": round(s, 3)} for w, s in self.w2v.neighbors(t)]
@@ -221,7 +227,8 @@ class SearchEngine:
 
     def corpus(self) -> dict:
         years = Counter(d.year for d in self.docs if d.year)
-        return {"documents": [{k: v for k, v in d.to_dict().items() if k != "abstract"} for d in self.docs],
+        return {"documents": [{**{k: v for k, v in d.to_dict().items() if k != "abstract"},
+                               "url": _public_url(d.url)} for d in self.docs],
                 "universities": [{"name": n, "count": c} for n, c in self._universities().most_common()],
                 "years": [{"year": y, "count": years[y]} for y in sorted(years)],
                 "vocabulary_size": len(self.index.postings)}
