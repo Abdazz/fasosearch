@@ -39,3 +39,15 @@ def test_no_field_contains_em_or_en_dash(docs):
     for d in docs:
         for value in (d.title, d.abstract, d.authors, d.university):
             assert "\u2014" not in value and "\u2013" not in value
+
+
+def test_url_column_after_university():
+    import openpyxl
+    header = [c.value for c in next(openpyxl.load_workbook(config.CORPUS_EXCEL, read_only=True).active.iter_rows(max_row=1))]
+    assert header[header.index("University") + 1] == "URL"
+
+
+def test_urls_are_https_and_never_openalex(docs):
+    urls = [d.url for d in docs if d.url]
+    assert len(urls) >= 85
+    assert all(u.startswith("https://") and "openalex.org" not in u for u in urls)

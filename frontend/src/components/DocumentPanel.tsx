@@ -80,7 +80,11 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
           <h2 className="dp-title" id={titleId}>{d.document.title}</h2>
           <p className="dp-authors">{d.document.authors}</p>
           <div className="dp-meta"><UniBadge name={d.document.university} />{d.document.year && <span>{d.document.year}</span>}
-            {d.document.url && <a className="btn" href={d.document.url} target="_blank" rel="noreferrer">↗ {t("detail.open")}</a>}</div>
+            {d.document.url && (
+              <a className="btn btn-source" href={d.document.url} target="_blank" rel="noopener noreferrer" title={t("detail.openHint")}>
+                ↗ {t("detail.open")}
+              </a>
+            )}</div>
           <p className="dp-abstract"><Highlight segments={d.document.abstract} /></p>
 
           <h3 className="dp-h">{t("detail.why")}</h3>

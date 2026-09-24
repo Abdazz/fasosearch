@@ -5,7 +5,7 @@ from pathlib import Path
 
 import openpyxl
 
-COLUMNS = ["ID_document", "Title", "Abstract", "Authors", "Year", "University"]
+COLUMNS = ["ID_document", "Title", "Abstract", "Authors", "Year", "University", "URL"]
 
 _BARE_DASH_RE = re.compile("[\u2014\u2013]")
 
@@ -27,6 +27,7 @@ class Document:
     authors: str
     year: int | None
     university: str
+    url: str = ""
 
     @property
     def text(self) -> str:
@@ -61,5 +62,6 @@ def load_corpus(path: Path) -> list[Document]:
             authors=normalize_dashes(str(get("Authors")).strip()),
             year=_year(get("Year")),
             university=normalize_dashes(str(get("University")).strip()),
+            url=str(get("URL")).strip(),
         ))
     return docs
