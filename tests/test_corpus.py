@@ -49,6 +49,12 @@ def test_normalize_dashes_leaves_plain_text_untouched():
     assert normalize_dashes("no dash here") == "no dash here"
 
 
+def test_normalize_dashes_docstring_has_no_dashes():
+    doc = normalize_dashes.__doc__
+    assert doc is not None
+    assert "\u2014" not in doc and "\u2013" not in doc
+
+
 def test_load_corpus_normalizes_dashes_in_text_fields_but_not_id():
     p = None
     import tempfile

@@ -12,11 +12,11 @@ _BARE_DASH_RE = re.compile("[\u2014\u2013]")
 
 
 def normalize_dashes(s: str) -> str:
-    """Aucun tiret cadratin (U+2014) ni demi-cadratin (U+2013) ne doit apparaître sur la plateforme.
+    """Normalise les tirets cadratins et demi-cadratins en tiret simple.
 
-    " \u2014 " / " \u2013 " (entourés d'espaces) -> " - " ; "\u2014"/"\u2013" restants (ex. 2010\u20132020) -> "-".
+    - Le tiret cadratin ou demi-cadratin entouré d'espaces (U+2014 ou U+2013) devient " - ".
+    - Le tiret cadratin ou demi-cadratin sans espaces (ex. 2010 avec U+2013 2020) devient "-".
     """
-    s = _SPACED_DASH_RE.sub(" - ", s)
     return _BARE_DASH_RE.sub("-", s)
 
 
