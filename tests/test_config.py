@@ -12,7 +12,7 @@ def test_paths_are_coherent():
 def test_constants_match_spec():
     assert config.W2V_PARAMS == dict(vector_size=100, window=5, min_count=5,
                                      epochs=30, seed=42, sg=1, workers=1)
-    assert config.W2V_THRESHOLD == 0.40
+    assert config.W2V_THRESHOLD == 0.60
     assert (config.BM25_K1, config.BM25_B) == (1.5, 0.75)
     assert config.PER_PAGE_CHOICES == (10, 20, 50)
     assert config.DEFAULT_PER_PAGE == 10

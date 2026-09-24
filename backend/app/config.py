@@ -24,7 +24,12 @@ EXCLUSIONS = DATA_DIR / "exclusions.txt"
 # min_count=5 (task 17b) : élimine les mots rares parasites (ex. "sorobouly", "liido") des
 # voisins, maintenant que le corpus d'entraînement est plus large (+ data/w2v_cs.txt).
 W2V_PARAMS = dict(vector_size=100, window=5, min_count=5, epochs=30, seed=42, sg=1, workers=1)
-W2V_THRESHOLD = 0.40
+# Seuil réglé via scripts/smoke_demo.py (task 18) : à 0.40, les requêtes de démo renvoyaient
+# quasiment tout le corpus (jusqu'à 90/90 documents) car les vecteurs moyens (IDF) de ce
+# vocabulaire restent globalement proches. Relevé par pas de 0.05 jusqu'à ce qu'au plus 2
+# requêtes de démo significatives sortent de l'intervalle [3, 40] documents : 0.60 -> 1 seule
+# requête hors intervalle (« Internet exchange points in Africa », 46), voir README.
+W2V_THRESHOLD = 0.60
 
 # BM25 (bonus TP 3)
 BM25_K1 = 1.5
