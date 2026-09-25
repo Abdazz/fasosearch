@@ -54,7 +54,7 @@ export default function ResultCard({ result, model, index, onOpen }: { result: S
         .term{font:500 12px var(--font-mono);padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2)}
         .term b{color:var(--ink)}
         .score{display:flex;flex-direction:column;align-items:center;gap:6px}
-        @media (max-width:760px){.card{grid-template-columns:1fr;}.rank{font-size:22px}.score{flex-direction:row}}
+        @media (max-width:760px){.card{grid-template-columns:1fr;}.card.no-score{grid-template-columns:1fr}.rank{font-size:22px}.score{flex-direction:row}}
       `}</style>
     </article>
   );

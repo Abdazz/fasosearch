@@ -85,6 +85,12 @@ describe("ResultCard", () => {
     const r = { rank: 1, id: "D", title: "T", authors: "A", university: "", year: null, score: 0.5, score_ratio: 1, snippet: [], contributions: [] };
     expect(html(<ResultCard result={r} model="tfidf" index={0} onOpen={noop} />)).toContain('class="score"');
   });
+  it("repasse en une seule colonne en mobile même sans anneau de score (no-score)", () => {
+    const r = { rank: 1, id: "D", title: "T", authors: "A", university: "", year: null, score: 0.5, score_ratio: 1, snippet: [], contributions: [] };
+    const out = html(<ResultCard result={r} index={0} onOpen={noop} />);
+    const media = out.slice(out.indexOf("@media (max-width:760px)"));
+    expect(media).toMatch(/\.card\.no-score\{grid-template-columns:1fr\}/);
+  });
 });
 
 describe("AuthorLinks", () => {
