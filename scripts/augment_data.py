@@ -87,6 +87,11 @@ WEAK_LEXICON = (
 
 CS_LEXICON = STRONG_LEXICON + WEAK_LEXICON  # >= 60 termes (contrat historique, cf. tests)
 
+# Entités non-personnelles vues chez OpenAlex comme "auteur" d'un authorship (ex. Document_84 :
+# "Burkina Faso" listé comme auteur à côté de deux personnes). Comparaison insensible à la
+# casse dans authorship_names().
+NON_PERSON_AUTHORS = {"burkina faso"}
+
 
 class QuotaExceeded(Exception):
     """Levée quand OpenAlex renvoie 429 : quota de crédits épuisé pour la fenêtre en cours."""
@@ -128,6 +133,19 @@ def bf_institutions(work: dict) -> list[str]:
             if inst.get("country_code") == "BF" and name and name not in seen:
                 seen.append(name)
     return seen
+
+
+def authorship_names(work: dict) -> list[str]:
+    """Noms affichés des auteurs d'un travail OpenAlex, au plus 8, sans doublon, en écartant
+    les entités non-personnelles de NON_PERSON_AUTHORS (ex. « Burkina Faso » mal typée comme
+    auteur par une erreur d'authorship OpenAlex, voir Document_84)."""
+    names: list[str] = []
+    for a in (work.get("authorships") or [])[:8]:
+        author = a.get("author") or {}
+        name = author.get("display_name")
+        if name and name.strip().lower() not in NON_PERSON_AUTHORS and name not in names:
+            names.append(name)
+    return names
 
 
 def select_diverse(cands: list[dict], n: int, per_subfield: int) -> list[dict]:
@@ -260,8 +278,7 @@ def to_candidate(w: dict) -> dict | None:
         return None
     if not (_is_english(title) and _is_english(abstract)):
         return None
-    authors = "; ".join(a["author"]["display_name"] for a in (w.get("authorships") or [])[:8]
-                        if a.get("author") and a["author"].get("display_name"))
+    authors = "; ".join(authorship_names(w))
     pt = w.get("primary_topic") or {}
     return {
         "title": title, "abstract": abstract, "authors": authors or "Unknown",

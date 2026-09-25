@@ -51,3 +51,16 @@ def test_urls_are_https_and_never_openalex(docs):
     urls = [d.url for d in docs if d.url]
     assert len(urls) >= 85
     assert all(u.startswith("https://") and "openalex.org" not in u for u in urls)
+
+
+def test_no_bogus_author_entries(docs):
+    """Chaque écriture d'auteur (séparée par ';') doit désigner une personne, pas une entité
+    géographique ou un espace réservé : au moins 2 mots, jamais vide, 'Unknown' ou
+    'Burkina Faso'."""
+    for d in docs:
+        for entry in d.authors.split(";"):
+            name = entry.strip()
+            assert name, f"{d.id} : écriture d'auteur vide"
+            assert name.lower() != "unknown", f"{d.id} : 'Unknown' comme auteur"
+            assert name.lower() != "burkina faso", f"{d.id} : 'Burkina Faso' comme auteur"
+            assert len(name.split()) >= 2, f"{d.id} : écriture d'auteur à un seul mot ({name!r})"

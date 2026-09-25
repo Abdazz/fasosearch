@@ -193,9 +193,9 @@ def real(real_docs):
 
 
 def test_real_counts(real_docs, real):
-    assert len(AuthorIndex(real_docs).authors) == 149
-    assert len(real.authors) == 148
-    assert sum(len(a.doc_ids) for a in real.authors) == 305 == sum(len(v) for v in real.by_doc.values())
+    assert len(AuthorIndex(real_docs).authors) == 148
+    assert len(real.authors) == 147
+    assert sum(len(a.doc_ids) for a in real.authors) == 304 == sum(len(v) for v in real.by_doc.values())
 
 
 def test_real_expected_groups(real):
