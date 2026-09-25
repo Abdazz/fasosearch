@@ -182,7 +182,6 @@ EXPECTED_GROUPS = [
     {"Boureima Zerbo", "Zerbo Boureima"},
     {"Doda Afoussatou Rollande", "Doda Afoussatou Rollande Sanou"},
     {"Ferdinand Tonguim Guinko", "Tonguim Ferdinand"},
-    {"Franklin Tchakount", "Franklin Tchakounté"},
     {"Frédéric Ouédraogo", "Frédéric T. Ouédraogo", "Ouedraogo Tounwendyam Frederic", "Ouédraogo Tounwendyam Frédéric",
      "Tounwendyam F. Ouédraogo", "Tounwendyam Frédéric", "Tounwendyam Frédéric Ouédraogo"},
     {"Gouayon Koala", "Koala Gouayon"},
@@ -212,7 +211,10 @@ def real(real_docs):
 
 
 def test_real_counts(real_docs, real):
-    assert len(AuthorIndex(real_docs).authors) == 186
+    # "Franklin Tchakount" (nom tronqué) et "Franklin Tchakounté" fusionnent maintenant
+    # automatiquement (même écriture complète dans les 3 documents), sans alias : un seul
+    # groupe séparé de moins que sans cette correction.
+    assert len(AuthorIndex(real_docs).authors) == 185
     assert len(real.authors) == 184
     assert sum(len(a.doc_ids) for a in real.authors) == 394 == sum(len(v) for v in real.by_doc.values())
 
