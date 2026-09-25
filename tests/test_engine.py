@@ -1,3 +1,5 @@
+import re
+
 import numpy as np
 import pytest
 
@@ -114,7 +116,10 @@ NON_HTTPS_DOCS = [
              "Université Norbert Zongo", "javascript:alert(1)"),
     Document("Document_02", "Cattle breed recognition",
              "Machine learning classifies cattle breeds from morphology.", "C. D", 2022,
-             "Université Nazi Boni", "http://x"),
+             "Université Nazi Boni", "data:text/html,alert(1)"),
+    Document("Document_03", "Malware traffic analysis",
+             "Encrypted traffic reveals malware attacks and anomalies.", "E. F", 2024,
+             "Université Joseph Ki-Zerbo", "http://article.sapub.org/x"),
 ]
 
 
@@ -125,16 +130,19 @@ def unsafe_url_engine():
     return SearchEngine(NON_HTTPS_DOCS, terms, kv)
 
 
-def test_document_url_rejects_non_https_schemes(unsafe_url_engine):
-    # javascript: et http:// (non chiffré) ne doivent jamais être servis comme URL "Source".
+def test_document_url_rejects_unsafe_schemes_but_accepts_http(unsafe_url_engine):
+    # javascript: et data: ne doivent jamais être servis comme URL "Source" ; http:// (page
+    # éditeur sans https, ex. Document_84) est désormais accepté au même titre que https://.
     assert unsafe_url_engine.document("Document_01")["document"]["url"] is None
     assert unsafe_url_engine.document("Document_02")["document"]["url"] is None
+    assert unsafe_url_engine.document("Document_03")["document"]["url"] == "http://article.sapub.org/x"
 
 
-def test_corpus_url_rejects_non_https_schemes(unsafe_url_engine):
+def test_corpus_url_rejects_unsafe_schemes_but_accepts_http(unsafe_url_engine):
     urls = {d["id"]: d["url"] for d in unsafe_url_engine.corpus()["documents"]}
     assert urls["Document_01"] is None
     assert urls["Document_02"] is None
+    assert urls["Document_03"] == "http://article.sapub.org/x"
 
 
 def test_stats_corpus_map(engine):
@@ -308,3 +316,43 @@ def test_author_profile_documents_have_snippet(engine):
     assert "url" in doc and doc["url"] is None
     assert "".join(s["text"] for s in doc["snippet"]).startswith("Encrypted traffic")
     assert engine.author("inconnu") is None
+
+
+# ---------------------------------------------------------------- auteurs : accents détachés
+# Écriture brute avec accent détaché de sa lettre (artefact d'extraction PDF) : "Bassol ́e".
+ACCENT_DOC = Document("Document_01", "Detached accent title", "Abstract sentence about detection systems.",
+                      "Didier Bassol ́e; Oumarou Si ́e", 2023, "Université X")
+# Second document sans le terme recherché : évite un idf nul (un seul document contenant
+# "detection" donnerait df = N, donc idf = log(N/df) = 0, et aucun résultat en tfidf).
+ACCENT_FILLER_DOC = Document("Document_02", "Unrelated title", "Something about cattle breeding methods.",
+                             "A. B", 2022, "Université Y")
+
+
+@pytest.fixture(scope="module")
+def accent_engine():
+    docs = [ACCENT_DOC, ACCENT_FILLER_DOC]
+    terms = [analyze(d.text) for d in docs]
+    kv = train_word2vec(terms * 20, {**config.W2V_PARAMS, "vector_size": 10, "epochs": 5, "min_count": 1})
+    return SearchEngine(docs, terms, kv)
+
+
+def test_authors_are_cleaned_for_display_everywhere(accent_engine):
+    """Aucune chaîne 'authors' renvoyée à l'API ne garde un accent détaché (marque combinante
+    U+0300-U+036F précédée d'une espace)."""
+    combining = re.compile(r" [̀-ͯ]")
+    expected = "Didier Bassolé; Oumarou Sié"
+
+    r = accent_engine.search("detection")
+    assert r["results"] and r["results"][0]["authors"] == expected
+    assert not combining.search(r["results"][0]["authors"])
+
+    d = accent_engine.document("Document_01")["document"]
+    assert d["authors"] == expected and not combining.search(d["authors"])
+
+    c = accent_engine.corpus()["documents"][0]
+    assert c["authors"] == expected and not combining.search(c["authors"])
+
+    author_id = accent_engine.author_index.by_doc["Document_01"][0][0]
+    p = accent_engine.author(author_id)
+    assert p["documents"][0]["authors"] == expected
+    assert not combining.search(p["documents"][0]["authors"])

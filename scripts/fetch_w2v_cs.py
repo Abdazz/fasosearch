@@ -1,6 +1,6 @@
 """Corpus d'ENTRAÎNEMENT Word2Vec (task 17b) : résumés anglais d'informatique (OpenAlex),
 de toutes origines, jamais indexés, jamais affichés comme résultat de recherche. Seul
-`scripts/build_index.py` les consomme, en plus de la base indexée (90 documents burkinabè,
+`scripts/build_index.py` les consomme, en plus de la base indexée (documents burkinabè,
 inchangée) et de `data/w2v_extra.txt` (résumés BF non indexés).
 
 Décision du contrôleur (constat : le corpus d'entraînement actuel est dominé par
@@ -22,8 +22,8 @@ déjà en cache disque depuis le run initial : un run incrémental ne consomme d
 8 * 5 = 40 crédits nouveaux, sous la limite de 50 crédits nouveaux fixée pour ce round.
 
 Un résumé est gardé (`f"{title}. {abstract}"`) s'il fait >= `MIN_WORDS` mots ; dédoublonné par
-titre normalisé (`norm_title`) ; les titres déjà présents dans la base indexée (90 articles)
-sont exclus (elle ne doit jamais être modifiée par ce script).
+titre normalisé (`norm_title`) ; les titres déjà présents dans la base indexée sont exclus
+(elle ne doit jamais être modifiée par ce script).
 
 Tout est accumulé en mémoire et `data/w2v_cs.txt` n'est écrit qu'à la toute fin : sur
 `QuotaExceeded` (429 OpenAlex), message clair et arrêt immédiat, sans fichier partiel.
@@ -88,8 +88,8 @@ def keep_line(work: dict, seen_titles: set[str], min_words: int = MIN_WORDS) -> 
 
 
 def indexed_titles() -> set[str]:
-    """Titres normalisés de la base indexée (90 documents) : jamais réintroduits dans le
-    corpus d'entraînement Word2Vec puisqu'ils y figurent déjà via `doc_terms`."""
+    """Titres normalisés de la base indexée : jamais réintroduits dans le corpus
+    d'entraînement Word2Vec puisqu'ils y figurent déjà via `doc_terms`."""
     return {norm_title(d.title) for d in load_corpus(config.CORPUS_EXCEL)}
 
 

@@ -23,7 +23,7 @@ def test_ids_unique_and_continuous(docs):
 
 
 def test_size_about_100(docs):
-    assert 90 <= len(docs) <= 110
+    assert 100 <= len(docs) <= 120
 
 
 def test_new_documents_have_university(docs):
@@ -35,10 +35,17 @@ def test_everything_is_english(docs):
     assert all(detect(d.abstract) == "en" for d in docs)
 
 
-def test_no_field_contains_em_or_en_dash(docs):
-    for d in docs:
-        for value in (d.title, d.abstract, d.authors, d.university):
-            assert "\u2014" not in value and "\u2013" not in value
+def test_no_field_contains_em_or_en_dash():
+    """Lit les cellules brutes de la base (avant `load_corpus`, qui normalise d\u00e9j\u00e0 les tirets
+    cadratins/demi-cadratins en tiret simple : passer par `load_corpus` rendrait ce test
+    incapable d'\u00e9chouer, quel que soit le contenu r\u00e9el du fichier)."""
+    import openpyxl
+
+    em, en = chr(0x2014), chr(0x2013)
+    wb = openpyxl.load_workbook(config.CORPUS_EXCEL, read_only=True)
+    violations = [cell for row in wb.active.iter_rows(values_only=True) for cell in row
+                  if isinstance(cell, str) and (em in cell or en in cell)]
+    assert not violations, violations
 
 
 def test_url_column_after_university():
@@ -47,10 +54,17 @@ def test_url_column_after_university():
     assert header[header.index("University") + 1] == "URL"
 
 
+# Document_84 : page éditeur (sapub.org) qui ne propose pas https et dont le DOI n'est pas
+# enregistré ; seule exception documentée à la règle "https uniquement".
+HTTP_EXCEPTIONS = {"Document_84"}
+
+
 def test_urls_are_https_and_never_openalex(docs):
-    urls = [d.url for d in docs if d.url]
-    assert len(urls) >= 85
-    assert all(u.startswith("https://") and "openalex.org" not in u for u in urls)
+    urls = [d for d in docs if d.url]
+    assert len(urls) == 114
+    assert all("openalex.org" not in d.url for d in urls)
+    assert all(d.url.startswith("https://") for d in urls if d.id not in HTTP_EXCEPTIONS)
+    assert all(d.url.startswith("http://") for d in urls if d.id in HTTP_EXCEPTIONS)
 
 
 def test_no_bogus_author_entries(docs):

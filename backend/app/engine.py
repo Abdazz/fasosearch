@@ -10,7 +10,7 @@ import numpy as np
 from gensim.models import KeyedVectors
 
 from . import config
-from .authors import AuthorIndex, highlight_name
+from .authors import AuthorIndex, display_authors, highlight_name
 from .bm25 import BM25Model
 from .corpus import Document, load_corpus
 from .index import InvertedIndex
@@ -64,9 +64,10 @@ def make_snippet(text: str, terms: set[str], max_chars: int = 320) -> list[dict]
 
 
 def _public_url(url: str | None) -> str | None:
-    """URL affichable via le bouton "Source" : seulement une page en https, jamais vide et
-    jamais un schéma risqué (javascript:, http: non chiffré...)."""
-    return url if url and url.startswith("https://") else None
+    """URL affichable via le bouton "Source" : seulement une page http(s), jamais vide et
+    jamais un schéma risqué (javascript:, data:...). http est accepté (Document_84 : page
+    éditeur sans https, DOI non enregistré)."""
+    return url if url and (url.startswith("https://") or url.startswith("http://")) else None
 
 
 def _check_alignment(ids_stored: list[str], ids_docs: list[str]) -> None:
@@ -146,7 +147,7 @@ class SearchEngine:
         for rank, (d, s) in enumerate(ranked[start:start + per_page], start=start + 1):
             doc = self.docs[d]
             results.append({
-                "rank": rank, "id": doc.id, "title": doc.title, "authors": doc.authors,
+                "rank": rank, "id": doc.id, "title": doc.title, "authors": display_authors(doc.authors),
                 "university": doc.university, "year": doc.year, "score": s,
                 "score_ratio": s / top if top > 0 else 0.0,
                 "snippet": make_snippet(doc.abstract, tset),
@@ -193,7 +194,7 @@ class SearchEngine:
                            "threshold": config.W2V_THRESHOLD if model == "w2v" else None,
                            "contributions": self._contributions(model, terms, d)}
         return {
-            "document": {**doc.to_dict(), "url": _public_url(doc.url),
+            "document": {**doc.to_dict(), "authors": display_authors(doc.authors), "url": _public_url(doc.url),
                          "author_links": [{"id": i, "name": n} for i, n in self.author_index.by_doc[doc_id]],
                          "abstract": highlight(doc.abstract, set(terms))},
             "explanation": explanation,
@@ -215,7 +216,7 @@ class SearchEngine:
             return None
         docs = [self.docs[self.by_id[i]] for i in p.pop("doc_ids")]
         p["documents"] = [{**{k: v for k, v in d.to_dict().items() if k not in ("abstract", "url")},
-                           "url": _public_url(d.url),
+                           "authors": display_authors(d.authors), "url": _public_url(d.url),
                            "snippet": make_snippet(d.abstract, set())} for d in docs]
         return p
 
@@ -247,6 +248,7 @@ class SearchEngine:
     def corpus(self) -> dict:
         years = Counter(d.year for d in self.docs if d.year)
         return {"documents": [{**{k: v for k, v in d.to_dict().items() if k != "abstract"},
+                               "authors": display_authors(d.authors),
                                "url": _public_url(d.url)} for d in self.docs],
                 "universities": [{"name": n, "count": c} for n, c in self._universities().most_common()],
                 "years": [{"year": y, "count": years[y]} for y in sorted(years)],

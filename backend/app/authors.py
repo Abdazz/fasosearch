@@ -26,6 +26,17 @@ def clean_name(raw: str) -> str:
     return _SPACES_RE.sub(" ", s).strip()
 
 
+def display_authors(s: str) -> str:
+    """Chaîne d'auteurs brute (colonne Authors) nettoyée pour l'affichage : recolle les accents
+    détachés de chaque écriture (séparées par ';'), retire les écritures vides."""
+    return "; ".join(c for c in (clean_name(p) for p in s.split(";")) if c)
+
+
+def _has_caps_word(name: str) -> bool:
+    """Vrai si `name` contient un mot de plus d'une lettre écrit tout en majuscules."""
+    return any(len(w) > 1 and w.isupper() for w in _WORD_RE.findall(name))
+
+
 def fold(s: str) -> str:
     """Minuscules ASCII, sans diacritiques."""
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
@@ -171,7 +182,9 @@ class AuthorIndex:
         if aliases is not None and aliases.exists():
             groups = _apply_rules(groups, parse_aliases(aliases), aliases.name)
 
-        named = sorted(((min(g, key=lambda f: (-freq[f], -len(f), f)), g) for g in groups),
+        named = sorted(((min(g, key=lambda f: (-freq[f], _has_caps_word(f),
+                                                -sum(ord(c) > 127 for c in f), -len(f), f)), g)
+                        for g in groups),
                        key=lambda x: (fold(x[0]), x[0]))
         used: Counter = Counter()
         self.authors: list[Author] = []
