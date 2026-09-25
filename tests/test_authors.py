@@ -1,8 +1,8 @@
 import pytest
 
 from backend.app import config
-from backend.app.authors import (AuthorIndex, clean_name, highlight_name, name_tokens, parse_aliases,
-                                 same_person, slugify)
+from backend.app.authors import (AuthorIndex, clean_name, display_authors, highlight_name, name_tokens,
+                                 parse_aliases, same_person, slugify)
 from backend.app.corpus import Document, load_corpus
 
 
@@ -22,6 +22,12 @@ def test_clean_name_drops_orphan_mark_lamdi_and_spaces():
     assert clean_name("  Souleymane   Kone Lamdi ") == "Souleymane Kone"
     assert clean_name("José Arthur Ouedraogo LAMDI") == "José Arthur Ouedraogo"
     assert clean_name("   ") == ""
+
+
+def test_display_authors_cleans_each_part_and_drops_empty():
+    assert display_authors("Didier Bassol ́e; ; Oumarou Si ́e") == "Didier Bassolé; Oumarou Sié"
+    assert display_authors("") == ""
+    assert display_authors("José Arthur Ouedraogo LAMDI") == "José Arthur Ouedraogo"
 
 
 def test_name_tokens_and_slugify_are_ascii():
@@ -63,6 +69,14 @@ def test_index_groups_variants_and_picks_most_frequent_name():
     assert fo.doc_ids == ["Document_01", "Document_02", "Document_03"]
     assert idx.by_doc["Document_03"] == [("tounwendyam-frederic-ouedraogo", "Tounwendyam Frédéric Ouédraogo"),
                                          ("jose-arthur-ouedraogo", "José Arthur Ouedraogo")]
+
+
+def test_display_name_avoids_all_caps_word_over_frequency_tie():
+    # "Moise OUEDRAOGO" et "Moïse Ouedraogo" apparaissent chacun une fois (même fréquence) :
+    # celle sans mot tout en majuscules est préférée, puis, à égalité, celle avec accents.
+    idx = AuthorIndex([doc(1, "Moise OUEDRAOGO"), doc(2, "Moïse Ouedraogo")])
+    a = idx.by_id["moise-ouedraogo"]
+    assert a.name == "Moïse Ouedraogo" and a.variants == ["Moise OUEDRAOGO"]
 
 
 def test_same_author_twice_in_one_doc_counts_once():
@@ -223,6 +237,16 @@ def test_real_ids_unique_ascii(real):
     ids = [a.id for a in real.authors]
     assert len(ids) == len(set(ids))
     assert all(re.fullmatch(r"[a-z]+(-[a-z0-9]+)*", i) for i in ids)
+
+
+def test_real_moise_ouedraogo_display(real):
+    a = real.by_id["moise-ouedraogo"]
+    assert a.name == "Moïse Ouedraogo" and a.variants == ["Moise OUEDRAOGO"]
+
+
+def test_real_document_61_authors_display(real_docs):
+    d61 = next(d for d in real_docs if d.id == "Document_61")
+    assert display_authors(d61.authors) == "Gouayon Koala; Didier Bassolé; Telesphore Tiendrebeogo; Oumarou Sié"
 
 
 def test_real_search_ouedraogo(real):
