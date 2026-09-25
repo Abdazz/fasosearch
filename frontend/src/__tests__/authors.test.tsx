@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import AuthorCard from "../components/AuthorCard";
 import AuthorLinks from "../components/AuthorLinks";
 import ResultCard from "../components/ResultCard";
+import ScoreRing from "../components/ScoreRing";
 import SearchBar from "../components/SearchBar";
 import { AuthorList } from "../pages/Authors";
 import { AuthorView } from "../pages/Author";
@@ -90,6 +91,18 @@ describe("ResultCard", () => {
     const out = html(<ResultCard result={r} index={0} onOpen={noop} />);
     const media = out.slice(out.indexOf("@media (max-width:760px)"));
     expect(media).toMatch(/\.card\.no-score\{grid-template-columns:1fr\}/);
+  });
+});
+
+describe("ScoreRing", () => {
+  it("affiche SCORE (pas BM25) comme unité de l'anneau pour le modèle BM25", () => {
+    const out = html(<ScoreRing value={7.2} ratio={0.6} model="bm25" />);
+    expect(out).toContain("SCORE");
+    expect(out).not.toContain(">BM25<");
+  });
+  it("garde COSINUS comme unité pour TF-IDF", () => {
+    const out = html(<ScoreRing value={0.5} ratio={1} model="tfidf" />);
+    expect(out).toContain("COSINUS");
   });
 });
 
