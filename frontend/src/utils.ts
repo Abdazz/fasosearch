@@ -91,6 +91,10 @@ export function fmtPeriod(years: [number, number] | null, t: T): string {
 
 export const fmtPapers = (n: number, t: T) => (n === 1 ? t("authors.papers.one") : t("authors.papers", { n }));
 
+/** Normalise une chaîne pour une comparaison insensible aux accents et à la casse
+ *  (ex. filtre texte de la page Corpus : "ouedraogo" doit trouver "Ouédraogo"). */
+export const foldText = (s: string) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
 export const nameInitials = (name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 

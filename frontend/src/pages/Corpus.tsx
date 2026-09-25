@@ -6,7 +6,7 @@ import { usePrefs } from "../prefs";
 import { navigate } from "../router";
 import type { CorpusResponse } from "../types";
 import { useUniColor } from "../uniColors";
-import { fmtNum, uniColor } from "../utils";
+import { fmtNum, foldText, uniColor } from "../utils";
 
 export default function Corpus() {
   const { t, lang } = usePrefs();
@@ -47,10 +47,13 @@ export default function Corpus() {
     };
   }, [yearTip]);
 
-  const rows = useMemo(() => (data?.documents ?? []).filter((d) =>
-    (!q || `${d.title} ${d.authors}`.toLowerCase().includes(q.toLowerCase())) &&
-    (!uni || d.university.split(";").map((s) => s.trim()).includes(uni)) &&
-    (!year || String(d.year) === year)), [data, q, uni, year]);
+  const rows = useMemo(() => {
+    const fq = foldText(q);
+    return (data?.documents ?? []).filter((d) =>
+      (!fq || foldText(`${d.title} ${d.authors}`).includes(fq)) &&
+      (!uni || d.university.split(";").map((s) => s.trim()).includes(uni)) &&
+      (!year || String(d.year) === year));
+  }, [data, q, uni, year]);
 
   const openDoc = (id: string, title: string) => navigate("search", { q: title, doc: id });
 
