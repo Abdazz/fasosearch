@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import DocumentPanel from "../components/DocumentPanel";
 import { api } from "../api";
 import { usePrefs } from "../prefs";
 import { navigate } from "../router";
@@ -6,9 +7,11 @@ import type { MapPoint, NeighborsResponse, PreprocessResponse } from "../types";
 import { useUniColor } from "../uniColors";
 import { uniAbbr, uniColor } from "../utils";
 
-export default function Lab() {
+export default function Lab({ params }: { params: URLSearchParams }) {
   const { t } = usePrefs();
   useUniColor();
+  const doc = params.get("doc");
+  const openDoc = (id?: string) => navigate("lab", { doc: id });
   const [text, setText] = useState(() => t("lab.sample"));
   const [mode, setMode] = useState<"lemma" | "stem">("lemma");
   const [pre, setPre] = useState<PreprocessResponse | null>(null);
@@ -66,7 +69,7 @@ export default function Lab() {
   ];
   const unis = useMemo(() => [...new Set(points.map((p) => p.university).filter(Boolean))], [points]);
   const uniLabel = (name: string) => name || t("common.uniUnknown");
-  const openPoint = (p: MapPoint) => navigate("search", { q: p.title, model: "w2v", doc: p.id });
+  const openPoint = (p: MapPoint) => openDoc(p.id);
 
   return (
     <section className="lab">
@@ -137,6 +140,10 @@ export default function Lab() {
         </div>
         <div className="map-legend">{unis.map((u) => <span key={u}><i style={{ background: uniColor(u) }} />{uniAbbr(u)} <small>{u}</small></span>)}</div>
       </div>
+
+      {doc && (
+        <DocumentPanel id={doc} query="" model="tfidf" lang="auto" onClose={() => openDoc(undefined)} onOpen={(id) => openDoc(id)} />
+      )}
 
       <style>{`
         .lab{padding-top:22px;display:flex;flex-direction:column;gap:16px}

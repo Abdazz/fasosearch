@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import DocumentPanel from "../components/DocumentPanel";
 import EmptyState from "../components/EmptyState";
 import UniBadge from "../components/UniBadge";
 import { ApiError, api } from "../api";
@@ -6,11 +7,13 @@ import { usePrefs } from "../prefs";
 import { navigate } from "../router";
 import type { CorpusResponse } from "../types";
 import { useUniColor } from "../uniColors";
-import { fmtNum, uniColor } from "../utils";
+import { fmtNum, foldText, uniColor } from "../utils";
 
-export default function Corpus() {
+export default function Corpus({ params }: { params: URLSearchParams }) {
   const { t, lang } = usePrefs();
   useUniColor();
+  const doc = params.get("doc");
+  const openDoc = (id?: string) => navigate("corpus", { doc: id });
   const [data, setData] = useState<CorpusResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -47,12 +50,13 @@ export default function Corpus() {
     };
   }, [yearTip]);
 
-  const rows = useMemo(() => (data?.documents ?? []).filter((d) =>
-    (!q || `${d.title} ${d.authors}`.toLowerCase().includes(q.toLowerCase())) &&
-    (!uni || d.university.split(";").map((s) => s.trim()).includes(uni)) &&
-    (!year || String(d.year) === year)), [data, q, uni, year]);
-
-  const openDoc = (id: string, title: string) => navigate("search", { q: title, doc: id });
+  const rows = useMemo(() => {
+    const fq = foldText(q);
+    return (data?.documents ?? []).filter((d) =>
+      (!fq || foldText(`${d.title} ${d.authors}`).includes(fq)) &&
+      (!uni || d.university.split(";").map((s) => s.trim()).includes(uni)) &&
+      (!year || String(d.year) === year));
+  }, [data, q, uni, year]);
 
   if (err) return <EmptyState kind={err === "server_down" ? "server_down" : "error"} msg={err} />;
   if (!data) return <div className="spinner" />;
@@ -119,8 +123,8 @@ export default function Corpus() {
           <thead><tr><th>{t("corpus.col.id")}</th><th>{t("corpus.col.title")}</th><th>{t("corpus.col.uni")}</th><th>{t("corpus.col.year")}</th></tr></thead>
           <tbody>{rows.map((d) => (
             <tr key={d.id} tabIndex={0} role="button" aria-label={t("corpus.row.open", { id: d.id })}
-              onClick={() => openDoc(d.id, d.title)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDoc(d.id, d.title); } }}>
+              onClick={() => openDoc(d.id)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDoc(d.id); } }}>
               <td className="mono">{d.id.replace("Document_", "#")}</td>
               <td><b>{d.title}</b><small>{d.authors}</small></td>
               <td>{d.university ? <UniBadge name={d.university} /> : <span className="lab-muted">{t("common.uniUnknown")}</span>}</td>
@@ -128,6 +132,9 @@ export default function Corpus() {
             </tr>))}</tbody>
         </table>
       </div>
+      {doc && (
+        <DocumentPanel id={doc} query="" model="tfidf" lang="auto" onClose={() => openDoc(undefined)} onOpen={(id) => openDoc(id)} />
+      )}
       <style>{`
         .corpus{padding-top:22px;display:flex;flex-direction:column;gap:16px}
         .corpus-charts{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}

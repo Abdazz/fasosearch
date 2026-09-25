@@ -64,11 +64,11 @@ export default function Home() {
         .examples{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
         .ex{border:var(--border-w) solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:13.5px;color:var(--ink-2)}
         .ex:hover{color:var(--ink);border-color:var(--line-strong)}
-        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
-        .stat{padding:20px 22px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--card-shadow)}
-        .stat b{font-size:40px}
+        .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:22px}
+        .stat{padding:20px 22px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--card-shadow);min-width:0}
+        .stat b{font-size:clamp(26px,8vw,40px)}
         .stat span{color:var(--ink-2);font-size:14px}
-        @media (max-width:760px){.stats{grid-template-columns:1fr 1fr}}
+        @media (max-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
       `}</style>
     </section>
   );

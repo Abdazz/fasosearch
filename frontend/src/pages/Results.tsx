@@ -10,6 +10,7 @@ import { ApiError, api } from "../api";
 import { usePrefs } from "../prefs";
 import { navigate } from "../router";
 import type { ModelId, QueryLang, SearchResponse } from "../types";
+import { fmtResultsCount } from "../utils";
 
 export default function Results({ params }: { params: URLSearchParams }) {
   const { t } = usePrefs();
@@ -52,7 +53,7 @@ export default function Results({ params }: { params: URLSearchParams }) {
         <button type="button" className="btn compare-btn" onClick={() => navigate("compare", { q, lang: lang === "auto" ? undefined : lang })}>⇆ {t("compare.cta")}</button>
         {data && (
           <div className="meta">
-            <b>{t("results.count", { total: data.total })}</b> · {t("results.time", { ms: data.took_ms })}
+            <b>{fmtResultsCount(data.total, t)}</b> · {t("results.time", { ms: data.took_ms })}
             {data.threshold !== null && <> · {t("results.threshold", { t: data.threshold.toFixed(2) })}</>}
           </div>
         )}
