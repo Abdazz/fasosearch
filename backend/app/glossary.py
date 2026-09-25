@@ -152,6 +152,21 @@ FR_EN = {
     "enfouis": "buried", "thermique": "thermal",
 }
 
+# Sigles français -> anglais, appliqués avant traduction (voir expand_acronyms dans language.py).
+# "si" est volontairement exclu : c'est le mot français courant "si" (if), pas un sigle
+# (systeme d'information), et l'inclure ferait traduire n'importe quelle proposition
+# conditionnelle en "if". "ri" est exclu pour la même raison : c'est le participe passé du
+# verbe "rire" ("il a ri"), pas le sigle de "recherche d'information".
+FR_ACRONYMS = {
+    "ia": "AI",
+    "tic": "ICT",
+    "tal": "NLP",
+    "sig": "GIS",
+    # "bd" désigne aussi la "bande dessinée" en français courant, mais ce corpus est un corpus
+    # d'informatique/recherche d'information : le sens "base de données" y est sans ambiguïté.
+    "bd": "database",
+}
+
 # Corrections des contresens fréquents du modèle neuronal sur le vocabulaire du domaine
 EN_FIXES = {
     "automatic learning": "machine learning",
@@ -165,6 +180,10 @@ EN_FIXES = {
     "search for information": "information retrieval",
     "natural language treatment": "natural language processing",
     "learning by strengthening": "reinforcement learning",
+    # Le traducteur neuronal retraduit parfois "AI" (sigle anglais que expand_acronyms lui a
+    # fourni, ex. "l'AI" -> "IA") en son sigle français d'origine "IA" (I-A) au lieu de le
+    # garder tel quel : on le corrige ici plutôt que de rappeler expand_acronyms après coup.
+    "ia": "AI",
 }
 
 # Mots-outils français ignorés par la traduction par glossaire

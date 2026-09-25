@@ -243,6 +243,25 @@ def test_real_engine_semantics():
 
 
 @pytest.mark.integration
+def test_real_engine_ia_acronym_queries_return_results():
+    # Bug sigles : "l'ia", "ia", "IA" renvoyaient 0 résultat car le sigle français IA
+    # (intelligence artificielle) n'était ni détecté comme marqueur FR, ni traduit en "AI"
+    # avant la traduction neuronale/glossaire. "l'IA" fonctionnait déjà (8 résultats) : on
+    # vérifie que les variantes cassées retrouvent au moins ce même nombre de résultats.
+    from scripts.build_index import is_stale
+    if not config.CORPUS_EXCEL.exists() or is_stale():
+        pytest.skip("modèles non construits")
+    real = SearchEngine.load()
+    baseline = real.search("l'IA", model="tfidf")
+    assert baseline["total"] >= 8
+    for q in ["l'ia", "ia", "IA", "L'IA", "détection par IA"]:
+        r = real.search(q, model="tfidf")
+        assert r["query"]["language"] == "fr"
+        assert "ai" in r["query"]["terms"]
+    assert real.search("l'ia", model="tfidf")["total"] >= 8
+
+
+@pytest.mark.integration
 def test_real_engine_cs_neighbors_are_specific_and_frequent():
     """Task 17b : le corpus d'entraînement Word2Vec inclut des résumés d'informatique
     (data/w2v_cs.txt) et min_count=5 -- les voisins de mots-clés informatiques doivent
