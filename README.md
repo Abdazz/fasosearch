@@ -184,6 +184,7 @@ la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 
 | `security of government websites` | comparaison BM25 vs TF-IDF (même classement, échelles de score différentes) |
 | `deep learning image counting` | Word2Vec & cosinus, requête multi-termes |
 | `the of and` | requête entièrement composée de mots vides : aucun terme après prétraitement |
+| `ouedraogo` (mode Auteurs) | recherche d'auteurs : variantes de noms fusionnées, page de profil avec co-auteurs et articles |
 
 ## Architecture
 
