@@ -54,10 +54,17 @@ def test_url_column_after_university():
     assert header[header.index("University") + 1] == "URL"
 
 
+# Document_84 : page éditeur (sapub.org) qui ne propose pas https et dont le DOI n'est pas
+# enregistré ; seule exception documentée à la règle "https uniquement".
+HTTP_EXCEPTIONS = {"Document_84"}
+
+
 def test_urls_are_https_and_never_openalex(docs):
-    urls = [d.url for d in docs if d.url]
-    assert len(urls) >= 110
-    assert all(u.startswith("https://") and "openalex.org" not in u for u in urls)
+    urls = [d for d in docs if d.url]
+    assert len(urls) == 114
+    assert all("openalex.org" not in d.url for d in urls)
+    assert all(d.url.startswith("https://") for d in urls if d.id not in HTTP_EXCEPTIONS)
+    assert all(d.url.startswith("http://") for d in urls if d.id in HTTP_EXCEPTIONS)
 
 
 def test_no_bogus_author_entries(docs):

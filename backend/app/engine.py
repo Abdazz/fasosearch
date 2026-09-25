@@ -64,9 +64,10 @@ def make_snippet(text: str, terms: set[str], max_chars: int = 320) -> list[dict]
 
 
 def _public_url(url: str | None) -> str | None:
-    """URL affichable via le bouton "Source" : seulement une page en https, jamais vide et
-    jamais un schéma risqué (javascript:, http: non chiffré...)."""
-    return url if url and url.startswith("https://") else None
+    """URL affichable via le bouton "Source" : seulement une page http(s), jamais vide et
+    jamais un schéma risqué (javascript:, data:...). http est accepté (Document_84 : page
+    éditeur sans https, DOI non enregistré)."""
+    return url if url and (url.startswith("https://") or url.startswith("http://")) else None
 
 
 def _check_alignment(ids_stored: list[str], ids_docs: list[str]) -> None:

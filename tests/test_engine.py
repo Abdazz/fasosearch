@@ -116,7 +116,10 @@ NON_HTTPS_DOCS = [
              "Université Norbert Zongo", "javascript:alert(1)"),
     Document("Document_02", "Cattle breed recognition",
              "Machine learning classifies cattle breeds from morphology.", "C. D", 2022,
-             "Université Nazi Boni", "http://x"),
+             "Université Nazi Boni", "data:text/html,alert(1)"),
+    Document("Document_03", "Malware traffic analysis",
+             "Encrypted traffic reveals malware attacks and anomalies.", "E. F", 2024,
+             "Université Joseph Ki-Zerbo", "http://article.sapub.org/x"),
 ]
 
 
@@ -127,16 +130,19 @@ def unsafe_url_engine():
     return SearchEngine(NON_HTTPS_DOCS, terms, kv)
 
 
-def test_document_url_rejects_non_https_schemes(unsafe_url_engine):
-    # javascript: et http:// (non chiffré) ne doivent jamais être servis comme URL "Source".
+def test_document_url_rejects_unsafe_schemes_but_accepts_http(unsafe_url_engine):
+    # javascript: et data: ne doivent jamais être servis comme URL "Source" ; http:// (page
+    # éditeur sans https, ex. Document_84) est désormais accepté au même titre que https://.
     assert unsafe_url_engine.document("Document_01")["document"]["url"] is None
     assert unsafe_url_engine.document("Document_02")["document"]["url"] is None
+    assert unsafe_url_engine.document("Document_03")["document"]["url"] == "http://article.sapub.org/x"
 
 
-def test_corpus_url_rejects_non_https_schemes(unsafe_url_engine):
+def test_corpus_url_rejects_unsafe_schemes_but_accepts_http(unsafe_url_engine):
     urls = {d["id"]: d["url"] for d in unsafe_url_engine.corpus()["documents"]}
     assert urls["Document_01"] is None
     assert urls["Document_02"] is None
+    assert urls["Document_03"] == "http://article.sapub.org/x"
 
 
 def test_stats_corpus_map(engine):
