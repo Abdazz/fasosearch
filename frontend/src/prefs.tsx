@@ -17,7 +17,7 @@ function stored<T extends string>(key: string, allowed: T[], fallback: T): T {
 function save(key: string, v: string) { try { localStorage.setItem(key, v); } catch { /* navigation privée */ } }
 
 export function PrefsProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(() => stored("fs.theme", ["nuit", "faso"], "nuit"));
+  const [theme, setThemeState] = useState<Theme>(() => stored("fs.theme", ["nuit", "faso"], "faso"));
   const [lang, setLangState] = useState<Lang>(() => stored("fs.lang", ["fr", "en"], "fr"));
   useEffect(() => { document.documentElement.dataset.theme = theme; }, [theme]);
   useEffect(() => { document.documentElement.lang = lang; }, [lang]);
