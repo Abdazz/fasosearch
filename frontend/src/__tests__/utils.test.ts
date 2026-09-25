@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtPapers, fmtPeriod, fmtScore, foldText, letterCount, nameInitials, pageRange, paperToResult, uniAbbr, uniColorMap } from "../utils";
+import { fmtPapers, fmtPeriod, fmtResultsCount, fmtScore, foldText, letterCount, nameInitials, pageRange, paperToResult, uniAbbr, uniColorMap } from "../utils";
 import { translate } from "../i18n";
 
 describe("pageRange", () => {
@@ -108,5 +108,16 @@ describe("foldText", () => {
   it("gère les chaînes vides ou sans accent", () => {
     expect(foldText("")).toBe("");
     expect(foldText("Zongo")).toBe("zongo");
+  });
+});
+
+describe("fmtResultsCount", () => {
+  it("accorde le singulier quand le total vaut 1", () => {
+    expect(fmtResultsCount(1, tFr)).toBe("1 document pertinent");
+    expect(fmtResultsCount(1, tEn)).toBe("1 relevant document");
+  });
+  it("garde le pluriel sinon", () => {
+    expect(fmtResultsCount(23, tFr)).toBe("23 documents pertinents");
+    expect(fmtResultsCount(0, tEn)).toBe("0 relevant documents");
   });
 });
