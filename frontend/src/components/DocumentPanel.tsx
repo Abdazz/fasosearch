@@ -3,6 +3,7 @@ import { api } from "../api";
 import { usePrefs } from "../prefs";
 import type { DocumentResponse, ModelId, QueryLang } from "../types";
 import { fmtScore } from "../utils";
+import AuthorLinks from "./AuthorLinks";
 import Highlight from "./Highlight";
 import ScoreRing from "./ScoreRing";
 import UniBadge from "./UniBadge";
@@ -78,7 +79,7 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
         {d && (<>
           <div className="label">{d.document.id}</div>
           <h2 className="dp-title" id={titleId}>{d.document.title}</h2>
-          <p className="dp-authors">{d.document.authors}</p>
+          <p className="dp-authors"><AuthorLinks links={d.document.author_links ?? []} fallback={d.document.authors} /></p>
           <div className="dp-meta"><UniBadge name={d.document.university} />{d.document.year && <span>{d.document.year}</span>}
             {d.document.url && (
               <a className="btn btn-source" href={d.document.url} target="_blank" rel="noopener noreferrer" title={t("detail.openHint")}>
@@ -141,6 +142,7 @@ export default function DocumentPanel({ id, query, model, lang, onClose, onOpen 
         .dp-close{align-self:flex-end}
         .dp-title{font:800 26px/1.2 var(--font-display);letter-spacing:-.02em}
         .dp-authors{color:var(--ink-2);font-size:14px}
+        .author-link{color:inherit;text-decoration:underline;text-decoration-color:var(--line-strong);text-underline-offset:3px}.author-link:hover{color:var(--ink);text-decoration-color:currentColor}
         .dp-meta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;color:var(--ink-2)}
         .dp-abstract{font-size:15.5px;line-height:1.75;color:var(--ink-2)}
         .dp-h{font:700 16px var(--font-display);margin-top:10px}

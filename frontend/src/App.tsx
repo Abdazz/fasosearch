@@ -1,5 +1,6 @@
 import Backdrop from "./components/Backdrop";
 import Nav from "./components/Nav";
+import Author from "./pages/Author";
 import Authors from "./pages/Authors";
 import Compare from "./pages/Compare";
 import Corpus from "./pages/Corpus";
@@ -26,6 +27,7 @@ export default function App() {
           {page === "lab" && <Lab />}
           {page === "corpus" && <Corpus />}
           {page === "authors" && <Authors params={params} />}
+          {page === "author" && <Author params={params} />}
         </main>
       </div>
     </>
