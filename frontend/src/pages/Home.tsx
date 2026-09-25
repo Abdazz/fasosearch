@@ -3,7 +3,7 @@ import SearchBar from "../components/SearchBar";
 import { api } from "../api";
 import { usePrefs } from "../prefs";
 import { navigate } from "../router";
-import type { QueryLang, Stats } from "../types";
+import type { QueryLang, SearchMode, Stats } from "../types";
 
 const EXAMPLES = ["détection d'intrusion dans les réseaux", "Internet exchange points in Africa",
   "apprentissage automatique pour la santé", "ontology for agriculture", "sécurité des sites web gouvernementaux"];
@@ -24,9 +24,11 @@ function Counter({ value }: { value: number }) {
 export default function Home() {
   const { t } = usePrefs();
   const [lang, setLang] = useState<QueryLang>("auto");
+  const [mode, setMode] = useState<SearchMode>("papers");
   const [stats, setStats] = useState<Stats | null>(null);
   useEffect(() => { api.stats().then(setStats).catch(() => setStats(null)); }, []);
   const go = (q: string) => navigate("search", { q, lang: lang === "auto" ? undefined : lang });
+  const submit = (q: string) => (mode === "authors" ? navigate("authors", { q }) : go(q));
 
   return (
     <section className="home">
@@ -36,7 +38,7 @@ export default function Home() {
       </h1>
       <p className="sub fade-up" style={{ animationDelay: ".1s" }}>{t("home.subtitle")}</p>
       <div className="fade-up" style={{ animationDelay: ".15s" }}>
-        <SearchBar big lang={lang} onLangChange={setLang} onSubmit={go} />
+        <SearchBar big lang={lang} onLangChange={setLang} onSubmit={submit} mode={mode} onModeChange={setMode} />
       </div>
       <div className="examples fade-up" style={{ animationDelay: ".2s" }}>
         <span className="label">{t("home.examples")}</span>

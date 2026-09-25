@@ -1,0 +1,8 @@
+# Corrections manuelles du regroupement des variantes de noms d'auteurs.
+# Les noms sont comparés sans accents ni casse, après nettoyage.
+#   fusion: Nom A = Nom B      force la fusion de deux écritures
+#   separer: Nom A | Nom B     empêche la fusion automatique de deux écritures
+# Une ligne mal formée ou un nom absent de la base arrête le démarrage.
+
+# Nom tronqué dans Document_66 (« Didier Bassol » pour « Didier Bassolé »).
+fusion: Didier Bassol = Didier Bassolé

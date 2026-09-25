@@ -283,3 +283,28 @@ def test_real_engine_cs_neighbors_are_specific_and_frequent():
                 f"{polluted} (top 10 complet : {neighbors})")
     if tested == 0:
         pytest.skip("aucun des mots testés n'est dans le vocabulaire")
+
+
+def test_author_links_in_document(engine):
+    d = engine.document("Document_01")["document"]
+    assert d["author_links"] == [{"id": "a-b", "name": "A. B"}]
+
+
+def test_search_authors_returns_summary_and_segments(engine):
+    r = engine.search_authors("c d")
+    assert [a["id"] for a in r] == ["c-d"]
+    assert r[0]["count"] == 1 and r[0]["years"] == [2022, 2022]
+    assert r[0]["universities"] == ["Université Nazi Boni"]
+    assert "".join(s["text"] for s in r[0]["segments"]) == "C. D"
+    assert engine.search_authors("x") == []
+
+
+def test_author_profile_documents_have_snippet(engine):
+    p = engine.author("e-f")
+    assert "doc_ids" not in p
+    assert [d["id"] for d in p["documents"]] == ["Document_03"]
+    doc = p["documents"][0]
+    assert "abstract" not in doc and doc["title"] == "Malware traffic analysis"
+    assert "url" in doc and doc["url"] is None
+    assert "".join(s["text"] for s in doc["snippet"]).startswith("Encrypted traffic")
+    assert engine.author("inconnu") is None

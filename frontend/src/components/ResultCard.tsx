@@ -9,10 +9,10 @@ function shortAuthors(a: string, etAl: string) {
   return list.length > 3 ? `${list.slice(0, 2).join(", ")} ${etAl}` : list.join(", ");
 }
 
-export default function ResultCard({ result, model, index, onOpen }: { result: SearchResult; model: ModelId; index: number; onOpen: (id: string) => void }) {
+export default function ResultCard({ result, model, index, onOpen }: { result: SearchResult; model?: ModelId; index: number; onOpen: (id: string) => void }) {
   const { t } = usePrefs();
   return (
-    <article className="card" style={{ animationDelay: `${index * 0.06}s` }} tabIndex={0} role="button"
+    <article className={`card ${model ? "" : "no-score"}`} style={{ animationDelay: `${index * 0.06}s` }} tabIndex={0} role="button"
       onClick={() => onOpen(result.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter") onOpen(result.id);
@@ -33,12 +33,15 @@ export default function ResultCard({ result, model, index, onOpen }: { result: S
           </div>
         )}
       </div>
-      <div className="score">
-        <ScoreRing value={result.score} ratio={result.score_ratio} model={model} />
-        <span className="label">{t(`model.${model}`)}</span>
-      </div>
+      {model && (
+        <div className="score">
+          <ScoreRing value={result.score} ratio={result.score_ratio} model={model} />
+          <span className="label">{t(`model.${model}`)}</span>
+        </div>
+      )}
       <style>{`
         .card{display:grid;grid-template-columns:56px 1fr 116px;gap:18px;align-items:start;padding:22px 24px;border-radius:var(--card-radius);background:var(--surface);border:var(--border-w) solid var(--line);box-shadow:var(--card-shadow);backdrop-filter:var(--blur);transition:transform .25s var(--ease-out),border-color .25s,box-shadow .25s;animation:fadeUp .6s var(--ease-out) both;cursor:pointer}
+        .card.no-score{grid-template-columns:56px 1fr}
         .card:hover{transform:translateY(-3px);border-color:var(--line-strong);box-shadow:var(--card-shadow-hover)}
         [data-theme="faso"] .card{border-color:var(--ink)}
         [data-theme="faso"] .card:hover{transform:translate(-2px,-2px)}
@@ -51,7 +54,7 @@ export default function ResultCard({ result, model, index, onOpen }: { result: S
         .term{font:500 12px var(--font-mono);padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--ink-2)}
         .term b{color:var(--ink)}
         .score{display:flex;flex-direction:column;align-items:center;gap:6px}
-        @media (max-width:760px){.card{grid-template-columns:1fr;}.rank{font-size:22px}.score{flex-direction:row}}
+        @media (max-width:760px){.card{grid-template-columns:1fr;}.card.no-score{grid-template-columns:1fr}.rank{font-size:22px}.score{flex-direction:row}}
       `}</style>
     </article>
   );

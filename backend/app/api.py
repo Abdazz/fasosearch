@@ -69,6 +69,17 @@ def create_app(engine: SearchEngine) -> FastAPI:
             raise HTTPException(404, f"Document introuvable : {doc_id}")
         return d
 
+    @app.get("/api/authors")
+    def authors(q: str = ""):
+        return engine.search_authors(q)
+
+    @app.get("/api/authors/{author_id}")
+    def author(author_id: str):
+        a = engine.author(author_id)
+        if a is None:
+            raise HTTPException(404, "Auteur introuvable.")
+        return a
+
     @app.post("/api/preprocess")
     def preprocess(body: PreprocessBody):
         return engine.preprocess(body.text, body.mode)

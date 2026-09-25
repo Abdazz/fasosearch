@@ -6,8 +6,9 @@ import requests
 
 from backend.app import config
 from backend.app.corpus import COLUMNS
-from scripts.augment_data import (CS_LEXICON, PER_SUBFIELD, SEARCH_RETRY_MAX_WAIT,
-                                  STRONG_LEXICON, WEAK_LEXICON, QuotaExceeded, bf_institutions,
+from scripts.augment_data import (CS_LEXICON, NON_PERSON_AUTHORS, PER_SUBFIELD,
+                                  SEARCH_RETRY_MAX_WAIT, STRONG_LEXICON, WEAK_LEXICON,
+                                  QuotaExceeded, authorship_names, bf_institutions,
                                   clean, is_computer_science, is_excluded, load_exclusions,
                                   next_ids, norm_title, rebuild_abstract, select_diverse,
                                   write_excel,
@@ -36,6 +37,27 @@ def test_bf_institutions_keeps_only_burkina():
         {"institutions": [{"display_name": "Université Joseph Ki-Zerbo", "country_code": "BF"}]},
     ]}
     assert bf_institutions(work) == ["Université Norbert Zongo", "Université Joseph Ki-Zerbo"]
+
+
+def test_authorship_names_drops_non_person_authors_case_insensitively():
+    work = {"authorships": [
+        {"author": {"display_name": "Telesphore Tiendrebeogo"}},
+        {"author": {"display_name": "Oumarou Sié"}},
+        {"author": {"display_name": "BURKINA FASO"}},
+    ]}
+    assert authorship_names(work) == ["Telesphore Tiendrebeogo", "Oumarou Sié"]
+    assert "burkina faso" in NON_PERSON_AUTHORS
+
+
+def test_authorship_names_caps_at_eight_drops_duplicates_and_missing():
+    # Les 8 premiers authorships seulement : doublon et auteurs manquants dedans sont ignorés,
+    # le 9e ("Auteur 8", valide) n'est jamais atteint.
+    work = {"authorships": [
+        {"author": {"display_name": "Auteur 0"}}, {"author": {"display_name": "Auteur 1"}},
+        {"author": {"display_name": "Auteur 0"}}, {"author": None}, {},
+        {"author": {"display_name": "Auteur 2"}}, {"author": {"display_name": "Auteur 3"}},
+        {"author": {"display_name": "Auteur 4"}}, {"author": {"display_name": "Auteur 8"}}]}
+    assert authorship_names(work) == ["Auteur 0", "Auteur 1", "Auteur 2", "Auteur 3", "Auteur 4"]
 
 
 def test_select_diverse_caps_subfields_and_prefers_recent():

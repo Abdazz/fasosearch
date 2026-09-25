@@ -61,3 +61,18 @@ def test_health_not_shadowed_by_static_mount(engine, tmp_path, monkeypatch):  # 
     c = TestClient(api_module.create_app(engine))
     assert c.get("/api/health").json()["status"] == "ok"
     assert "spa" in c.get("/").text
+
+
+def test_authors_endpoints(client):
+    r = client.get("/api/authors", params={"q": "a b"})
+    assert r.status_code == 200 and [a["id"] for a in r.json()] == ["a-b"]
+    assert client.get("/api/authors", params={"q": "x"}).json() == []
+    assert client.get("/api/authors").json() == []
+    p = client.get("/api/authors/a-b")
+    assert p.status_code == 200 and p.json()["documents"][0]["id"] == "Document_01"
+    r = client.get("/api/authors/personne")
+    assert r.status_code == 404 and r.json() == {"detail": "Auteur introuvable."}
+
+
+def test_document_has_author_links(client):
+    assert client.get("/api/documents/Document_02").json()["document"]["author_links"] == [{"id": "c-d", "name": "C. D"}]

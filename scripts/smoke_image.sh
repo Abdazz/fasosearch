@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Test de fumée d'une image FasoSearch : santé + recherche en français.
+# Test de fumée d'une image FasoSearch : santé, recherche en français et recherche d'auteurs.
 # Usage : bash scripts/smoke_image.sh <image>
 set -euo pipefail
 IMAGE="$1"
@@ -19,5 +19,7 @@ curl -fsS "http://127.0.0.1:$PORT/api/health"; echo
 curl -fsS -X POST "http://127.0.0.1:$PORT/api/search" -H 'content-type: application/json' \
   -d '{"query":"détection d'"'"'intrusion","model":"tfidf"}' \
   | python3 -c "import json,sys; d=json.load(sys.stdin); n=d['total']; print('résultats :', n); sys.exit(0 if n > 0 else 1)"
+curl -fsS "http://127.0.0.1:$PORT/api/authors?q=bassol" \
+  | python3 -c "import json,sys; d=json.load(sys.stdin); print('auteurs :', len(d)); sys.exit(0 if len(d) == 1 and d[0]['id'] == 'didier-bassole' else 1)"
 curl -fsS "http://127.0.0.1:$PORT/" | grep -q "<div id=\"root\">"
 echo "SMOKE OK"
