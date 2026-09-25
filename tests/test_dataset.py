@@ -23,7 +23,7 @@ def test_ids_unique_and_continuous(docs):
 
 
 def test_size_about_100(docs):
-    assert 90 <= len(docs) <= 110
+    assert 100 <= len(docs) <= 120
 
 
 def test_new_documents_have_university(docs):
@@ -49,7 +49,7 @@ def test_url_column_after_university():
 
 def test_urls_are_https_and_never_openalex(docs):
     urls = [d.url for d in docs if d.url]
-    assert len(urls) >= 85
+    assert len(urls) >= 110
     assert all(u.startswith("https://") and "openalex.org" not in u for u in urls)
 
 

@@ -6,3 +6,7 @@
 
 # Nom tronqué dans Document_66 (« Didier Bassol » pour « Didier Bassolé »).
 fusion: Didier Bassol = Didier Bassolé
+
+# Nom tronqué dans Document_64 et Document_66 (« Franklin Tchakount » pour « Franklin Tchakounté »,
+# écrit en entier dans Document_101 ; même chercheur, mêmes travaux sur les logiciels malveillants Android).
+fusion: Franklin Tchakount = Franklin Tchakounté

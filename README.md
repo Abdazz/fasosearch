@@ -1,7 +1,7 @@
 # FasoSearch, Système de Recherche d'Information
 
 Devoir de Recherche d'Information, Master IA 2026-2027.
-Moteur de recherche sur 90 articles scientifiques **en anglais** d'auteurs affiliés
+Moteur de recherche sur 116 articles scientifiques **en anglais** d'auteurs affiliés
 à des institutions du **Burkina Faso**, interrogeable **en français ou en anglais**.
 
 ## Lancer (démo)
@@ -25,6 +25,8 @@ non suivis par git (voir `.gitignore` et la section suivante), qu'il faut donc c
 régénérer sur toute autre machine (dépôt cloné, clé USB de remise du projet…) :
 ```bash
 # (déjà fait ici) ~/.venvs/sri/bin/python scripts/augment_data.py    -> base complète (90 documents)
+# (déjà fait ici) ~/.venvs/sri/bin/python scripts/extend_corpus.py   -> 26 articles de plus (116 documents)
+# (déjà fait ici) ~/.venvs/sri/bin/python scripts/add_urls.py        -> colonne URL
 # (déjà fait ici) ~/.venvs/sri/bin/python scripts/fetch_w2v_cs.py    -> corpus d'entraînement Word2Vec (informatique)
 ```
 
@@ -48,7 +50,7 @@ projet (clé USB, archive pour la soutenance...), copier en plus, depuis ce post
 
 | Chemin | Contenu | Obligatoire |
 |---|---|---|
-| `data/base_complete.xlsx` | les 90 documents indexés | oui |
+| `data/base_complete.xlsx` | les 116 documents indexés | oui |
 | `data/original/donnees_textuelles.xlsx` | les 30 documents originaux (copie en lecture seule) | oui |
 | `data/openalex_cache/` | cache des réponses OpenAlex (évite de reconsommer le quota) | non (optionnel) |
 | `models/` | index prétraité (`doc_terms.json`) + Word2Vec entraîné (`w2v.kv`) | oui, sinon régénéré au premier lancement (15-25 min) |
@@ -62,7 +64,7 @@ Sans `models/`, `lang_models/` ou `nltk_data/`, relancer respectivement
 
 ## Origine des données
 
-Les 60 articles ajoutés à la base d'origine (30 articles) viennent d'**OpenAlex**
+Les 86 articles ajoutés à la base d'origine (30 articles) viennent d'**OpenAlex**
 (https://openalex.org), une base bibliographique ouverte qui agrège les métadonnées de
 sources comme IEEE Xplore, ACM, arXiv, Springer, Elsevier, etc. Le bouton « Source » de la
 fiche d'un article s'appuie sur la colonne `URL` de `data/base_complete.xlsx`, remplie une
@@ -88,21 +90,45 @@ articles encore mal classés (ex. usage de l'IA en cardiologie, en épidémiolog
 malgré le filtre lexical : voir `data/exclusions.txt` (122 titres exclus, avec le motif de
 chaque exclusion en commentaire).
 
-Répartition des éditeurs des 60 articles ajoutés (préfixe DOI, `data/doi.json`, donnée
+Les 26 derniers articles (`Document_91` à `Document_116`) ont été choisis un par un parmi
+les candidats OpenAlex restants, puis ajoutés par `scripts/extend_corpus.py` à partir de la
+liste `data/extra_works.txt` (identifiants OpenAlex, dans l'ordre des documents). Le script
+vérifie à nouveau l'affiliation burkinabè, la langue, la longueur du résumé (60 à 450 mots)
+et les auteurs, ne touche jamais aux 90 premières lignes et peut être relancé sans effet.
+
+Répartition des éditeurs des 86 articles ajoutés (préfixe DOI, `data/doi.json`, donnée
 d'entrée de `scripts/add_urls.py` et non le lien affiché dans l'application) :
 
 | Éditeur | Articles |
 |---|---|
-| IEEE | 25 |
-| SciRP | 5 |
-| IJACSA | 5 |
-| Elsevier | 2 |
-| IFIP | 2 |
-| ACM | 2 |
-| AIRCC | 2 |
+| IEEE | 31 |
+| SciRP | 6 |
+| IJACSA | 6 |
+| AIRCC | 6 |
+| IOS Press | 6 |
+| Elsevier | 4 |
+| IFIP | 3 |
+| ACM | 3 |
 | IAES | 2 |
-| Autres (12 éditeurs distincts, 1 article chacun) | 12 |
-| Sans DOI (identifiant OpenAlex uniquement) | 3 |
+| Autres (14 éditeurs distincts, 1 article chacun) | 14 |
+| Sans DOI (identifiant OpenAlex uniquement) | 5 |
+
+Répartition des 116 documents par institution (colonne University ; un document compte pour
+chacune de ses institutions) :
+
+| Institution | Documents |
+|---|---|
+| Nazi Boni University | 59 |
+| Université Joseph Ki-Zerbo | 45 |
+| University of Koudougou | 24 |
+| Université Ouaga II | 6 |
+| Institut de l'Environnement et Recherches Agricoles | 4 |
+| Université Aube Nouvelle | 4 |
+| Institut Supérieur de l'Informatique et de Gestion | 3 |
+| Institut de Recherche Pour le Développement | 3 |
+| Centre Muraz | 2 |
+| Autres (5 institutions, 1 document chacune) | 5 |
+| Non renseignée (voir ci-dessous) | 4 |
 
 4 articles de la base d'origine (`Document_03`, `Document_04`, `Document_07`, `Document_23`,
 voir `data/affiliations_a_verifier.txt`) n'ont pas pu être rattachés automatiquement à une
@@ -125,9 +151,9 @@ Compléter la colonne University dans `data/base_complete.xlsx` pour les 4 docum
 
 ## Corpus d'entraînement Word2Vec
 
-Word2Vec est entraîné sur un corpus plus large que les 90 documents indexés, jamais affiché
+Word2Vec est entraîné sur un corpus plus large que les 116 documents indexés, jamais affiché
 comme résultat de recherche :
-- les 90 documents indexés (résumés + titres) ;
+- les 116 documents indexés (résumés + titres) ;
 - `data/w2v_extra.txt` : environ 16 000 résumés d'auteurs burkinabè (tous domaines), pour que
   les mots généraux du corpus aient des voisins de qualité ;
 - `data/w2v_cs.txt` : environ 15 000 résumés anglais d'informatique (toutes origines, via
@@ -161,9 +187,11 @@ toutes les requêtes (jusqu'à 90/90 documents) : les vecteurs moyens pondérés
 globalement proches sur ce vocabulaire. Relevé par pas de 0.05, puis affiné par pas de 0.01 (le
 prétraitement corrigé lors de la vague de correctifs finale, voir `PREPROCESS_VERSION`, a
 légèrement déplacé tous les vecteurs moyens), le seuil **0.58** ramène le nombre de requêtes
-hors intervalle à 1 sur 8 requêtes significatives (seule
-`Internet exchange points in Africa` dépasse largement, avec 61 documents), ce qui respecte
-la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 0.58`.
+hors intervalle à 1 sur 8 requêtes significatives sur la base de 90 documents. Après
+l'extension à 116 documents (index reconstruit, seuil inchangé), 2 requêtes sur 8 sortent de
+l'intervalle : `Internet exchange points in Africa` (73 documents) et
+`apprentissage automatique pour la santé` (61 documents), ce qui respecte encore la règle
+(au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 0.58`.
 
 ## Requêtes de démonstration
 
@@ -180,8 +208,8 @@ la règle (au plus 2). `tests/test_config.py` vérifie `config.W2V_THRESHOLD == 
 | `apprentissage automatique pour la santé` | traduction FR -> EN neuronale (« machine learning for health ») |
 | `Internet exchange points in Africa` | comparaison des scores TF-IDF / Word2Vec / BM25 (page **Comparer**) |
 | `ontologie pour l'agriculture` | traduction FR -> EN (« ontology for agriculture ») |
-| `malware` (Word2Vec) | Word2Vec trouve 6 documents, dont 3 que TF-IDF ne trouve pas du tout (`Document_03`, `Document_49`, `Document_54` : « Detecting Illicit Data Leaks on Android Smartphones... », qui ne contient jamais le mot « malware » mais dont le vecteur moyen est proche par le sens) |
-| `security of government websites` | comparaison BM25 vs TF-IDF (même classement, échelles de score différentes) |
+| `malware` (Word2Vec) | Word2Vec trouve 7 documents (TF-IDF : 5), dont 3 que TF-IDF ne trouve pas du tout (`Document_03`, `Document_49`, `Document_54` : « Detecting Illicit Data Leaks on Android Smartphones... », qui ne contient jamais le mot « malware » mais dont le vecteur moyen est proche par le sens) |
+| `security of government websites` | comparaison BM25 vs TF-IDF (26 documents chacun, mêmes 4 premiers, échelles de score différentes) |
 | `deep learning image counting` | Word2Vec & cosinus, requête multi-termes |
 | `the of and` | requête entièrement composée de mots vides : aucun terme après prétraitement |
 | `ouedraogo` (mode Auteurs) | recherche d'auteurs : variantes de noms fusionnées, page de profil avec co-auteurs et articles |

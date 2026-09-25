@@ -168,13 +168,18 @@ EXPECTED_GROUPS = [
     {"Boureima Zerbo", "Zerbo Boureima"},
     {"Doda Afoussatou Rollande", "Doda Afoussatou Rollande Sanou"},
     {"Ferdinand Tonguim Guinko", "Tonguim Ferdinand"},
+    {"Franklin Tchakount", "Franklin Tchakounté"},
     {"Frédéric Ouédraogo", "Frédéric T. Ouédraogo", "Ouedraogo Tounwendyam Frederic", "Ouédraogo Tounwendyam Frédéric",
      "Tounwendyam F. Ouédraogo", "Tounwendyam Frédéric", "Tounwendyam Frédéric Ouédraogo"},
     {"Gouayon Koala", "Koala Gouayon"},
+    {"Hamidou Harouna Omar", "Omar Harouna Hamidou"},
     {"Jean Louis Ebongue Kedieng Fendji", "Jean Louis Kedieng Ebongue Fendji"},
     {"Jose Arthur", "José Arthur Ouedraogo"},
+    {"Kabre Laciné", "Lacine KABRE"},
     {"Kouraogo Justin Pegdwindé", "Pegdwindé Justin Kouraogo"},
+    {"Lydie Simone Kone/Tapsoba", "Tapsoba Lydie Simone"},
     {"Mesmin Dandjinou", "Toundé Mesmin Dandjinou"},
+    {"Moise OUEDRAOGO", "Moïse Ouedraogo"},
     {"Souleymane Kone", "Souleymane Koné"},
     {"Tegawende Bissyande", "Tegawendé Bissyandé", "Tegawendé F. Bissyandé", "Tegawendé François Bissyandé"},
     {"Tiguiane Yélémou", "Yélémou Tiguiane"},
@@ -193,9 +198,9 @@ def real(real_docs):
 
 
 def test_real_counts(real_docs, real):
-    assert len(AuthorIndex(real_docs).authors) == 148
-    assert len(real.authors) == 147
-    assert sum(len(a.doc_ids) for a in real.authors) == 304 == sum(len(v) for v in real.by_doc.values())
+    assert len(AuthorIndex(real_docs).authors) == 186
+    assert len(real.authors) == 184
+    assert sum(len(a.doc_ids) for a in real.authors) == 394 == sum(len(v) for v in real.by_doc.values())
 
 
 def test_real_expected_groups(real):
@@ -205,8 +210,8 @@ def test_real_expected_groups(real):
 
 def test_real_key_authors(real):
     fo = real.by_id["tounwendyam-frederic-ouedraogo"]
-    assert fo.name == "Tounwendyam Frédéric Ouédraogo" and len(fo.doc_ids) == 27
-    assert len(real.by_id["oumarou-sie"].doc_ids) == 16
+    assert fo.name == "Tounwendyam Frédéric Ouédraogo" and len(fo.doc_ids) == 28
+    assert len(real.by_id["oumarou-sie"].doc_ids) == 17
     assert "José Arthur Ouedraogo" not in fo.variants
     assert real.by_id["jose-arthur-ouedraogo"].name == "José Arthur Ouedraogo"
     names = {a.name for a in real.authors} | {v for a in real.authors for v in a.variants}
