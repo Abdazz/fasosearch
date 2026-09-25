@@ -23,6 +23,7 @@ from backend.app.language import (
     ("ia", "fr"),
     ("IA", "fr"),
     ("AI for health", "en"),
+    ("Providence, RI", "en"),   # abréviation d'état américain -- "ri" n'est plus un marqueur FR.
 ])
 def test_detect_language(text, expected):
     assert detect_language(text) == expected
@@ -37,6 +38,8 @@ def test_detect_language(text, expected):
     ("Ia", "AI"),
     ("IA", "AI"),
     ("détection par ia", "détection par AI"),
+    ("il a ri", "il a ri"),     # "ri" n'est pas dans FR_ACRONYMS (faux positif : "rire").
+    ("Providence, RI", "Providence, RI"),
 ])
 def test_expand_acronyms(text, expected):
     assert expand_acronyms(text) == expected
@@ -104,11 +107,28 @@ def test_analyze_language_ia_acronym_yields_ai(text):
     assert info.original == text
 
 
-def test_analyze_language_forced_english_expands_ia_acronym():
+def test_analyze_language_forced_english_does_not_expand_acronyms():
+    # expand_acronyms ne doit s'appliquer qu'en français (détecté ou forcé) : forcer l'anglais
+    # sur "ia" doit laisser le mot tel quel (ce n'est alors qu'un mot anglais ordinaire).
     tr = Translator()
     info = analyze_language("ia", "en", tr)
     assert info.language == "en" and info.forced
-    assert info.english == "AI"
+    assert info.english == "ia"
+
+
+@pytest.mark.parametrize("text", ["BD", "sig"])
+def test_analyze_language_forced_english_leaves_bd_and_sig_untouched(text):
+    tr = Translator()
+    info = analyze_language(text, "en", tr)
+    assert info.language == "en" and info.forced
+    assert info.english == text
+
+
+def test_analyze_language_ai_for_health_stays_english():
+    tr = Translator()
+    info = analyze_language("AI for health", "auto", tr)
+    assert info.language == "en" and info.translated is None
+    assert info.english == "AI for health"
 
 
 def test_glossary_translate_expands_ia_acronym_when_neural_unavailable():

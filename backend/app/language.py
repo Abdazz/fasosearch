@@ -149,9 +149,10 @@ class LanguageInfo:
 def analyze_language(text: str, lang: str, translator: Translator) -> LanguageInfo:
     forced = lang in ("fr", "en")
     language = lang if forced else detect_language(text)
-    expanded = expand_acronyms(text)  # sigles FR (ex. "ia" -> "AI") avant traduction, quelle que
-    # soit la langue détectée ou forcée -- l'original (`text`) reste affiché tel quel.
     if language == "fr":
-        translated, method = translator.translate(expanded)
+        # Sigle FR (ex. "ia" -> "AI") avant traduction, langue détectée ou forcée "fr" seulement --
+        # jamais en anglais, où "BD"/"sig"/"ri" doivent rester des mots anglais ordinaires.
+        # L'original (`text`) reste affiché tel quel.
+        translated, method = translator.translate(expand_acronyms(text))
         return LanguageInfo(text, "fr", forced, translated, method, translated)
-    return LanguageInfo(text, "en", forced, None, None, expanded)
+    return LanguageInfo(text, "en", forced, None, None, text)

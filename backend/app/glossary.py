@@ -155,13 +155,15 @@ FR_EN = {
 # Sigles français -> anglais, appliqués avant traduction (voir expand_acronyms dans language.py).
 # "si" est volontairement exclu : c'est le mot français courant "si" (if), pas un sigle
 # (systeme d'information), et l'inclure ferait traduire n'importe quelle proposition
-# conditionnelle en "if".
+# conditionnelle en "if". "ri" est exclu pour la même raison : c'est le participe passé du
+# verbe "rire" ("il a ri"), pas le sigle de "recherche d'information".
 FR_ACRONYMS = {
     "ia": "AI",
     "tic": "ICT",
     "tal": "NLP",
     "sig": "GIS",
-    "ri": "IR",
+    # "bd" désigne aussi la "bande dessinée" en français courant, mais ce corpus est un corpus
+    # d'informatique/recherche d'information : le sens "base de données" y est sans ambiguïté.
     "bd": "database",
 }
 
