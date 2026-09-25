@@ -35,10 +35,17 @@ def test_everything_is_english(docs):
     assert all(detect(d.abstract) == "en" for d in docs)
 
 
-def test_no_field_contains_em_or_en_dash(docs):
-    for d in docs:
-        for value in (d.title, d.abstract, d.authors, d.university):
-            assert "\u2014" not in value and "\u2013" not in value
+def test_no_field_contains_em_or_en_dash():
+    """Lit les cellules brutes de la base (avant `load_corpus`, qui normalise d\u00e9j\u00e0 les tirets
+    cadratins/demi-cadratins en tiret simple : passer par `load_corpus` rendrait ce test
+    incapable d'\u00e9chouer, quel que soit le contenu r\u00e9el du fichier)."""
+    import openpyxl
+
+    em, en = chr(0x2014), chr(0x2013)
+    wb = openpyxl.load_workbook(config.CORPUS_EXCEL, read_only=True)
+    violations = [cell for row in wb.active.iter_rows(values_only=True) for cell in row
+                  if isinstance(cell, str) and (em in cell or en in cell)]
+    assert not violations, violations
 
 
 def test_url_column_after_university():
