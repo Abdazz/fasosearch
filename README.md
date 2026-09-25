@@ -143,7 +143,7 @@ Vocabulaire final (`min_count=5`) : environ 30 000 mots.
 | Critère | Où le voir |
 |---|---|
 | Augmentation des données | `scripts/augment_data.py`, fichier `data/base_complete.xlsx`, page **Corpus** |
-| IHM | 6 écrans, thèmes Nuit / Faso, interface FR / EN |
+| IHM | 8 écrans (dont Auteurs et Auteur pour la recherche d'auteurs), thèmes Nuit / Faso, interface FR / EN |
 | Prétraitement | `backend/app/preprocess.py`, page **Laboratoire** |
 | Requête prétraitée | bloc « Requête -> Traduction -> Prétraitée » de chaque recherche |
 | Affichage des scores | anneaux de score, « Pourquoi ce score ? », page **Comparer** |
