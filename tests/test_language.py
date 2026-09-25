@@ -5,6 +5,7 @@ from backend.app.language import (
     _apply_fixes,
     analyze_language,
     detect_language,
+    expand_acronyms,
     glossary_translate,
 )
 
@@ -19,9 +20,26 @@ from backend.app.language import (
     ("data", "en"),
     ("internet", "en"),
     ("", "en"),
+    ("ia", "fr"),
+    ("IA", "fr"),
+    ("AI for health", "en"),
 ])
 def test_detect_language(text, expected):
     assert detect_language(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("via media digital signal", "via media digital signal"),
+    ("l'ia", "l'AI"),
+    ("l’IA", "l’AI"),
+    ("d'IA", "d'AI"),
+    ("ia", "AI"),
+    ("Ia", "AI"),
+    ("IA", "AI"),
+    ("détection par ia", "détection par AI"),
+])
+def test_expand_acronyms(text, expected):
+    assert expand_acronyms(text) == expected
 
 
 def test_glossary_translation_handles_elision_and_phrases():
@@ -75,6 +93,29 @@ def test_analyze_language_auto_and_forced():
     assert en.language == "en" and en.translated is None and en.english == "intrusion detection"
     forced = analyze_language("data", "fr", tr)
     assert forced.language == "fr" and forced.forced
+
+
+@pytest.mark.parametrize("text", ["l'ia", "ia", "IA", "L'IA", "détection par IA", "l'ia pour la santé"])
+def test_analyze_language_ia_acronym_yields_ai(text):
+    tr = Translator()
+    info = analyze_language(text, "auto", tr)
+    assert info.language == "fr"
+    assert "ai" in info.english.lower().split() or "ai" in info.english.lower()
+    assert info.original == text
+
+
+def test_analyze_language_forced_english_expands_ia_acronym():
+    tr = Translator()
+    info = analyze_language("ia", "en", tr)
+    assert info.language == "en" and info.forced
+    assert info.english == "AI"
+
+
+def test_glossary_translate_expands_ia_acronym_when_neural_unavailable():
+    # Chemin de repli (pas de modèle neuronal) : glossary_translate doit aussi voir "AI"
+    # une fois expand_acronyms appliqué en amont, comme le fait analyze_language (glossary_translate
+    # met tout en minuscules, donc le terme final est "ai").
+    assert glossary_translate(expand_acronyms("l'ia")) == "ai"
 
 
 def test_translate_is_cached_and_returns_same_result_twice():

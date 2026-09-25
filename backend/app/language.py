@@ -8,7 +8,7 @@ import re
 from dataclasses import dataclass
 
 from . import config
-from .glossary import EN_FIXES, FR_EN, FR_FUNCTION_WORDS
+from .glossary import EN_FIXES, FR_ACRONYMS, FR_EN, FR_FUNCTION_WORDS
 
 FR_MARKERS = {"le", "la", "les", "des", "du", "de", "et", "pour", "dans", "une", "un", "sur", "par",
               "avec", "aux", "au", "est", "sont", "d", "l", "qu", "ou", "comment", "quels", "quelles"}
@@ -27,6 +27,7 @@ def detect_language(text: str) -> str:
         return "en"
     fr = sum(w in FR_MARKERS for w in words) + 2 * any(c in FR_ACCENTS for c in text.lower())
     fr += sum(w in FR_EN and FR_EN[w] != w for w in words)          # mots français connus du glossaire
+    fr += sum(w in FR_ACRONYMS for w in words)                      # sigle français (ex. "ia" seul)
     en = sum(w in EN_MARKERS for w in words)
     if fr != en:
         return "fr" if fr > en else "en"
@@ -38,6 +39,22 @@ def detect_language(text: str) -> str:
         except Exception:
             pass
     return "en"
+
+
+_ACRONYM_RE = re.compile(
+    r"\b(" + "|".join(re.escape(a) for a in sorted(FR_ACRONYMS, key=len, reverse=True)) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def expand_acronyms(text: str) -> str:
+    """Remplace les sigles français (ex. "ia") par leur forme anglaise ("AI") avant traduction.
+
+    Ne touche qu'aux mots entiers (donc jamais "via", "media", "tal" dans "digital" ou "sig"
+    dans "signal") ; une éventuelle apostrophe d'élision ("l'ia", "l’IA", "d'IA") est déjà
+    hors des limites de mot, donc conservée telle quelle ("l'AI").
+    """
+    return _ACRONYM_RE.sub(lambda m: FR_ACRONYMS[m.group(0).lower()], text)
 
 
 _EN_FIXES_LOWER = {wrong.lower(): right for wrong, right in EN_FIXES.items()}
@@ -132,7 +149,9 @@ class LanguageInfo:
 def analyze_language(text: str, lang: str, translator: Translator) -> LanguageInfo:
     forced = lang in ("fr", "en")
     language = lang if forced else detect_language(text)
+    expanded = expand_acronyms(text)  # sigles FR (ex. "ia" -> "AI") avant traduction, quelle que
+    # soit la langue détectée ou forcée -- l'original (`text`) reste affiché tel quel.
     if language == "fr":
-        translated, method = translator.translate(text)
+        translated, method = translator.translate(expanded)
         return LanguageInfo(text, "fr", forced, translated, method, translated)
-    return LanguageInfo(text, "en", forced, None, None, text)
+    return LanguageInfo(text, "en", forced, None, None, expanded)
