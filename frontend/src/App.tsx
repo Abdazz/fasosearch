@@ -24,8 +24,8 @@ export default function App() {
           {page === "home" && <Home />}
           {page === "search" && <Results params={params} />}
           {page === "compare" && <Compare params={params} />}
-          {page === "lab" && <Lab />}
-          {page === "corpus" && <Corpus />}
+          {page === "lab" && <Lab params={params} />}
+          {page === "corpus" && <Corpus params={params} />}
           {page === "authors" && <Authors params={params} />}
           {page === "author" && <Author params={params} />}
         </main>
