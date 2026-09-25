@@ -25,7 +25,7 @@ export interface CompareItem { rank: number; id: string; title: string; universi
 export interface CompareResponse { query: QueryInfo; models: Record<ModelId, CompareItem[]> }
 export interface Neighbor { word: string; similarity: number }
 export interface DocumentResponse {
-  document: { id: string; title: string; authors: string; university: string; year: number | null; url: string | null; abstract: Segment[] };
+  document: { id: string; title: string; authors: string; university: string; year: number | null; url: string | null; author_links: AuthorLink[]; abstract: Segment[] };
   explanation: { model: ModelId; score: number; below_threshold: boolean; threshold: number | null;
                  contributions: Contribution[] } | null;
   neighbors: Record<string, Neighbor[]>;
@@ -36,3 +36,14 @@ export interface CorpusDoc { id: string; title: string; authors: string; univers
 export interface CorpusResponse { documents: CorpusDoc[]; universities: { name: string; count: number }[]; years: { year: number; count: number }[]; vocabulary_size: number }
 export interface MapPoint { id: string; title: string; university: string; year: number | null; x: number; y: number }
 export interface NeighborsResponse { word: string; term: string; in_vocabulary: boolean; neighbors: Neighbor[] }
+
+export type SearchMode = "papers" | "authors";
+export interface AuthorLink { id: string; name: string }
+export interface AuthorSummary {
+  id: string; name: string; count: number; universities: string[]; years: [number, number] | null; segments: Segment[];
+}
+export interface AuthorPaper { id: string; title: string; authors: string; university: string; year: number | null; snippet: Segment[] }
+export interface AuthorProfile {
+  id: string; name: string; count: number; universities: string[]; years: [number, number] | null;
+  variants: string[]; coauthors: { id: string; name: string; count: number }[]; documents: AuthorPaper[];
+}

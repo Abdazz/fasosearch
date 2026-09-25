@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { fmtScore, pageRange, uniAbbr, uniColorMap } from "../utils";
+import { fmtPapers, fmtPeriod, fmtScore, letterCount, nameInitials, pageRange, paperToResult, uniAbbr, uniColorMap } from "../utils";
+import { translate } from "../i18n";
 
 describe("pageRange", () => {
   it("affiche toutes les pages quand il y en a peu", () => {
@@ -64,5 +65,36 @@ describe("uniColorMap", () => {
       "Université Ouaga II", "Institut de Recherche Pour le Développement"];
     const shuffled = [...names].reverse();
     expect(uniColorMap(shuffled)).toEqual(uniColorMap(names));
+  });
+});
+
+const tFr = (k: string, v?: Record<string, string | number>) => translate("fr", k, v);
+const tEn = (k: string, v?: Record<string, string | number>) => translate("en", k, v);
+
+describe("auteurs", () => {
+  it("compte les lettres sans accents ni ponctuation", () => {
+    expect(letterCount("é")).toBe(1);
+    expect(letterCount(" - ")).toBe(0);
+    expect(letterCount("Ou")).toBe(2);
+  });
+  it("formate la période", () => {
+    expect(fmtPeriod([2012, 2024], tFr)).toBe("2012 à 2024");
+    expect(fmtPeriod([2012, 2024], tEn)).toBe("2012 to 2024");
+    expect(fmtPeriod([2020, 2020], tFr)).toBe("2020");
+    expect(fmtPeriod(null, tFr)).toBe("");
+  });
+  it("accorde le nombre d'articles", () => {
+    expect(fmtPapers(1, tFr)).toBe("1 article");
+    expect(fmtPapers(27, tFr)).toBe("27 articles");
+    expect(fmtPapers(1, tEn)).toBe("1 paper");
+  });
+  it("calcule les initiales", () => {
+    expect(nameInitials("Tounwendyam Frédéric Ouédraogo")).toBe("TF");
+    expect(nameInitials("Zongo")).toBe("Z");
+  });
+  it("transforme un article d'auteur en carte sans score", () => {
+    const r = paperToResult({ id: "D1", title: "T", authors: "A", university: "U", year: 2020, snippet: [] }, 2);
+    expect(r.rank).toBe(3);
+    expect(r.contributions).toEqual([]);
   });
 });

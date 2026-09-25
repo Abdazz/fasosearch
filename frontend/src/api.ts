@@ -1,7 +1,9 @@
-import type { CompareResponse, CorpusResponse, DocumentResponse, MapPoint, ModelId, NeighborsResponse,
+import type { AuthorProfile, AuthorSummary, CompareResponse, CorpusResponse, DocumentResponse, MapPoint, ModelId, NeighborsResponse,
   PreprocessResponse, QueryLang, SearchResponse, Stats } from "./types";
 
-export class ApiError extends Error {}
+export class ApiError extends Error {
+  constructor(message: string, public status?: number) { super(message); }
+}
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let r: Response;
@@ -11,7 +13,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError("server_down");
   }
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new ApiError(body.detail ?? `HTTP ${r.status}`);
+  if (!r.ok) throw new ApiError(body.detail ?? `HTTP ${r.status}`, r.status);
   return body as T;
 }
 const post = <T,>(path: string, data: unknown) => call<T>(path, { method: "POST", body: JSON.stringify(data) });
@@ -27,4 +29,6 @@ export const api = {
   stats: () => call<Stats>("/api/stats"),
   corpus: () => call<CorpusResponse>("/api/corpus"),
   map: () => call<{ points: MapPoint[] }>("/api/map"),
+  authors: (q: string) => call<AuthorSummary[]>("/api/authors?" + new URLSearchParams({ q })),
+  author: (id: string) => call<AuthorProfile>(`/api/authors/${encodeURIComponent(id)}`),
 };

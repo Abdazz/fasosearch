@@ -1,4 +1,4 @@
-import type { Lang, ModelId } from "./types";
+import type { AuthorPaper, Lang, ModelId, SearchResult } from "./types";
 
 export function pageRange(page: number, pages: number): (number | "…")[] {
   if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
@@ -78,3 +78,22 @@ export function uniColor(name: string): string {
   for (const c of abbr) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return PALETTE[h % PALETTE.length];
 }
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
+
+/** Nombre de lettres d'une requête, sans accents, chiffres ni ponctuation (même règle que le serveur). */
+export const letterCount = (q: string) => q.normalize("NFD").replace(/[^\p{L}]/gu, "").length;
+
+export function fmtPeriod(years: [number, number] | null, t: T): string {
+  if (!years) return "";
+  return years[0] === years[1] ? String(years[0]) : t("author.period", { from: years[0], to: years[1] });
+}
+
+export const fmtPapers = (n: number, t: T) => (n === 1 ? t("authors.papers.one") : t("authors.papers", { n }));
+
+export const nameInitials = (name: string) =>
+  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
+
+/** Article d'une page auteur affiché avec la carte de résultat, sans score. */
+export const paperToResult = (p: AuthorPaper, i: number): SearchResult =>
+  ({ ...p, rank: i + 1, score: 0, score_ratio: 0, contributions: [] });
