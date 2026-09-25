@@ -134,7 +134,7 @@ def preprocess(text: str, mode: str = "lemma") -> Preprocessed:
             t.removed_by = "stopword"
             continue
         kept.append(t)
-    # 4. lemmatisation guidée par la nature grammaticale (ou stemming)
+    # 4. lemmatisation guidée par la nature grammaticale
     if mode == "stem":
         for t in kept:
             t.term = _stemmer.stem(t.normalized)
