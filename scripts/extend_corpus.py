@@ -4,7 +4,6 @@ Lancer :  python scripts/extend_corpus.py   puis   python scripts/add_urls.py
 """
 import copy
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -13,32 +12,51 @@ import openpyxl
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.app import config  # noqa: E402
-from backend.app.corpus import load_corpus  # noqa: E402
+from backend.app.corpus import load_corpus, normalize_dashes  # noqa: E402
 from scripts.augment_data import (BF_FETCH_LIMIT, BF_FILTER, SELECT, _get, _is_english,  # noqa: E402
                                   authorship_names, bf_institutions, clean, fetch_all, norm_title,
                                   rebuild_abstract)
 
 EXTRA_WORKS = config.DATA_DIR / "extra_works.txt"
-_DASHES = re.compile("[" + chr(0x2014) + chr(0x2013) + "]")
+# Noms interdits comme auteur unique (comparaison insensible à la casse), en plus des entrées
+# d'un seul mot : "Burkina Faso" est déjà filtré par authorship_names, mais on le garde ici en
+# ceinture de sécurité si ce filtre venait à changer.
+_INVALID_AUTHOR_NAMES = {"unknown", "burkina faso", ""}
 
 
 def read_work_ids(path: Path) -> list[str]:
     return [s for s in (l.strip() for l in path.read_text(encoding="utf-8").splitlines()) if s and not s.startswith("#")]
 
 
+def _work_id(w: dict) -> str | None:
+    """Partie après le dernier "/" de l'id OpenAlex d'une notice, ou None si absent/mal formé."""
+    wid = w.get("id")
+    if not wid or "/" not in wid:
+        return None
+    return wid.rsplit("/", 1)[1]
+
+
 def load_works(wanted: list[str]) -> dict[str, dict]:
     """Notices depuis le cache des pages BF, sinon un appel works/<id> (mis en cache disque)."""
-    found = {w["id"].rsplit("/", 1)[1]: w for w in fetch_all(BF_FILTER, limit=BF_FETCH_LIMIT)
-             if w.get("id", "").rsplit("/", 1)[1] in wanted}
+    found = {}
+    for w in fetch_all(BF_FILTER, limit=BF_FETCH_LIMIT):
+        wid = _work_id(w)
+        if wid is not None and wid in wanted:
+            found[wid] = w
     for wid in wanted:
         if wid not in found:
             found[wid] = _get(f"works/{wid}", {"select": SELECT})
     return found
 
 
+def _valid_authors(names: list[str]) -> list[str]:
+    """Noms d'auteurs gardés : au moins 2 mots, ni vides, ni "Unknown"/"Burkina Faso"."""
+    return [n for n in names if len(n.split()) >= 2 and n.strip().lower() not in _INVALID_AUTHOR_NAMES]
+
+
 def build_row(work: dict, new_id: str) -> list:
-    title = _DASHES.sub("-", clean(work.get("title")))
-    abstract = _DASHES.sub("-", clean(rebuild_abstract(work.get("abstract_inverted_index"))))
+    title = normalize_dashes(clean(work.get("title")))
+    abstract = normalize_dashes(clean(rebuild_abstract(work.get("abstract_inverted_index"))))
     unis = bf_institutions(work)
     if not unis:
         raise ValueError(f"{new_id} : aucune institution du Burkina Faso dans la notice")
@@ -46,8 +64,12 @@ def build_row(work: dict, new_id: str) -> list:
         raise ValueError(f"{new_id} : résumé de {len(abstract.split())} mots (attendu 60 à 450)")
     if not (_is_english(title) and _is_english(abstract)):
         raise ValueError(f"{new_id} : titre ou résumé non anglais")
-    authors = "; ".join(_DASHES.sub("-", a) for a in authorship_names(work))
-    return [new_id, title, abstract, authors, work.get("publication_year"), "; ".join(unis), ""]
+    authors = _valid_authors(authorship_names(work))
+    if not authors:
+        raise ValueError(f"{new_id} : aucun auteur valide dans la notice (au moins 2 mots, "
+                          f"ni vide, ni \"Unknown\", ni \"Burkina Faso\")")
+    return [new_id, title, abstract, "; ".join(normalize_dashes(a) for a in authors),
+            work.get("publication_year"), "; ".join(unis), ""]
 
 
 def append_rows(path: Path, rows: list[list]) -> None:

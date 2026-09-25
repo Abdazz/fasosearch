@@ -36,6 +36,26 @@ def test_build_row_rejects_non_bf_and_bad_length():
         E.build_row(work(n_words=20), "Document_91")
 
 
+def test_build_row_rejects_when_no_valid_author():
+    with pytest.raises(ValueError, match="auteur"):
+        E.build_row(work(authors=("Burkina Faso",)), "Document_91")
+
+
+def test_build_row_filters_single_word_authors():
+    row = E.build_row(work(authors=("Kodjo Agbezoutsi", "Jane", "Burkina Faso")), "Document_91")
+    assert row[3] == "Kodjo Agbezoutsi"
+
+
+def test_load_works_skips_work_without_id(monkeypatch):
+    bad = {k: v for k, v in work().items() if k != "id"}
+    good = work()
+    monkeypatch.setattr(E, "fetch_all", lambda *a, **k: [bad, good])
+    monkeypatch.setattr(E, "_get", lambda *a, **k: pytest.fail("ne doit pas etre appele"))
+    found = E.load_works(["W1"])
+    assert list(found) == ["W1"]
+    assert found["W1"] is good
+
+
 def _book(path):
     wb = openpyxl.Workbook()
     wb.active.append(["ID_document", "Title", "Abstract", "Authors", "Year", "University", "URL"])
