@@ -4,11 +4,13 @@ import math
 import re
 import time
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 from gensim.models import KeyedVectors
 
 from . import config
+from .authors import AuthorIndex, highlight_name
 from .bm25 import BM25Model
 from .corpus import Document, load_corpus
 from .index import InvertedIndex
@@ -79,7 +81,7 @@ def _check_alignment(ids_stored: list[str], ids_docs: list[str]) -> None:
 # ---------------------------------------------------------------- moteur
 class SearchEngine:
     def __init__(self, docs: list[Document], doc_terms: list[list[str]], kv: KeyedVectors,
-                 translator: Translator | None = None):
+                 translator: Translator | None = None, aliases: Path | None = None):
         self.docs = docs
         self.doc_terms = doc_terms
         self.by_id = {d.id: i for i, d in enumerate(docs)}
@@ -89,6 +91,7 @@ class SearchEngine:
         self.w2v = Word2VecModel(kv, doc_terms, self.tfidf.idf_map())
         self.translator = translator or Translator()
         self.translator.warm_up()
+        self.author_index = AuthorIndex(docs, aliases)
         self._map = self._compute_map()
 
     @classmethod
@@ -97,7 +100,7 @@ class SearchEngine:
         docs = load_corpus(config.CORPUS_EXCEL)
         stored = json.loads(DOC_TERMS.read_text(encoding="utf-8"))
         _check_alignment(stored["ids"], [d.id for d in docs])
-        return cls(docs, stored["terms"], KeyedVectors.load(str(W2V_FILE)))
+        return cls(docs, stored["terms"], KeyedVectors.load(str(W2V_FILE)), aliases=config.AUTHOR_ALIASES)
 
     # -- requête
     def analyze_query(self, query: str, lang: str = "auto", model: str = "tfidf") -> dict:
@@ -191,6 +194,7 @@ class SearchEngine:
                            "contributions": self._contributions(model, terms, d)}
         return {
             "document": {**doc.to_dict(), "url": _public_url(doc.url),
+                         "author_links": [{"id": i, "name": n} for i, n in self.author_index.by_doc[doc_id]],
                          "abstract": highlight(doc.abstract, set(terms))},
             "explanation": explanation,
             "neighbors": {t: [{"word": w, "similarity": round(s, 3)} for w, s in self.w2v.neighbors(t)]
@@ -199,6 +203,21 @@ class SearchEngine:
                          "university": self.docs[j].university, "year": self.docs[j].year,
                          "similarity": round(s, 3)} for j, s in self.w2v.similar_documents(d)],
         }
+
+    # -- auteurs
+    def search_authors(self, q: str) -> list[dict]:
+        return [{**self.author_index.summary(a), "segments": highlight_name(a.name, q)}
+                for a in self.author_index.search(q)]
+
+    def author(self, author_id: str) -> dict | None:
+        p = self.author_index.profile(author_id)
+        if p is None:
+            return None
+        docs = [self.docs[self.by_id[i]] for i in p.pop("doc_ids")]
+        p["documents"] = [{**{k: v for k, v in d.to_dict().items() if k not in ("abstract", "url")},
+                           "url": _public_url(d.url),
+                           "snippet": make_snippet(d.abstract, set())} for d in docs]
+        return p
 
     # -- laboratoire
     def preprocess(self, text: str, mode: str = "lemma") -> dict:
