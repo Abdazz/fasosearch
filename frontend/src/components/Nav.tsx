@@ -15,7 +15,7 @@ export default function Nav({ page }: { page: Page }) {
       </button>
       <div className="links">
         {links.map((l) => (
-          <button key={l.id} className={page === l.id || (page === "home" && l.id === "search") ? "on" : ""}
+          <button key={l.id} className={page === l.id || (["home", "authors", "author"].includes(page) && l.id === "search") ? "on" : ""}
             onClick={() => navigate(l.id === "search" ? "home" : l.id)}>{t(l.key)}</button>
         ))}
       </div>

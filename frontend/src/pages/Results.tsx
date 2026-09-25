@@ -45,7 +45,8 @@ export default function Results({ params }: { params: URLSearchParams }) {
   return (
     <section className="results-page">
       <SearchBar initial={q} lang={lang} detected={data ? { language: data.query.language, forced: data.query.forced } : null}
-        onSubmit={(nq) => go({ q: nq, page: 1 })} onLangChange={(l) => go({ lang: l === "auto" ? undefined : l, page: 1 })} />
+        onSubmit={(nq) => go({ q: nq, page: 1 })} onLangChange={(l) => go({ lang: l === "auto" ? undefined : l, page: 1 })}
+        mode="papers" onModeChange={(m) => m === "authors" && navigate("authors", { q })} />
       <div className="controls">
         <ModelSwitch value={model} onChange={(m) => go({ model: m, page: 1 })} />
         <button type="button" className="btn compare-btn" onClick={() => navigate("compare", { q, lang: lang === "auto" ? undefined : lang })}>⇆ {t("compare.cta")}</button>
